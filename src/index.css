@@ -77,3 +77,26 @@ body {
 }
 .data-table td { padding: 4px 8px; border-bottom: 1px solid var(--border-subtle); }
 .data-table tr:hover td { background: var(--surface-hover); }
+
+/* Dark mode */
+.dark {
+  --bg: #0f0f13; --bg-2: #16161d; --bg-3: #1e1e27;
+  --surface: #16161d; --surface-hover: #1e1e27;
+  --border: #2a2a36; --border-subtle: #1e1e27;
+  --text: #f0f0f5; --text-2: #a0a0b8; --text-3: #6a6a80;
+  --accent: #7B73FF; --accent-hover: #8F89FF; --accent-light: rgba(123,115,255,0.12);
+  --green: #34d399; --green-light: rgba(52,211,153,0.12);
+  --red: #f87171; --red-light: rgba(248,113,113,0.12);
+  --orange: #fb923c; --orange-light: rgba(251,146,60,0.12);
+  --yellow: #fbbf24; --yellow-light: rgba(251,191,36,0.12);
+  --blue: #60a5fa; --blue-light: rgba(96,165,250,0.12);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .desktop-sidebar { display: none !important; }
+  .mobile-nav { display: flex !important; }
+  .page-content { padding: 16px !important; }
+  .data-table { font-size: 11px; }
+  .data-table th, .data-table td { padding: 4px 6px; }
+}

@@ -7,6 +7,8 @@ interface S {
   contacts: Contact[]; team: TeamMember[]; tasks: Task[]; events: CETACEvent[];
   partnerships: Partnership[]; content: ContentItem[]; outreach: Outreach[];
   calendar: CalendarEvent[]; settings: AppSettings;
+  darkMode: boolean;
+  toggleDarkMode: () => void;
   // Generic CRUD
   add: <T extends { id: string }>(key: string, item: Omit<T, 'id' | 'createdAt'>) => void;
   update: (key: string, itemId: string, updates: Record<string, any>) => void;
@@ -36,15 +38,15 @@ const TEAM: TeamMember[] = [
 
 // Pre-loaded 9-week events
 const EVENTS: CETACEvent[] = [
-  { id: id(), name: 'Foundation Week — Internal Setup', description: 'Finalise team structure, begin rebrand, draft LinkedIn post, start alumni mapping, outreach to business schools', date: '', time: '', venue: '', week: 1, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Internal', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'Spectra Search: Investor Perspective', description: 'Investor talk/fireside — how they evaluate searchers. Moderated Q&A.', date: '', time: '', venue: 'CJBS', week: 2, status: 'planned', speakers: ['Spectra Search'], sponsors: [], attendeeCount: 0, format: 'Talk + Q&A', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'LBS Dinner + Co-Founder Coffee', description: 'LBS dinner (8-12 people), first co-founder coffee, alumni outreach begins, Search Day venue lock', date: '', time: '', venue: 'London/Cambridge', week: 3, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Dinner + Networking', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'Aven Capital: Roll-up Strategy', description: 'Talk/workshop on roll-up strategy — thesis, sourcing, integration', date: '', time: '', venue: 'CJBS', week: 4, status: 'planned', speakers: ['Aven Capital'], sponsors: [], attendeeCount: 0, format: 'Workshop', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'Darren Coyne / debtadvisory.ai: Acquisition Finance', description: 'Joint session — deal structuring, debt options, lender relationships', date: '', time: '', venue: 'CJBS', week: 5, status: 'planned', speakers: ['Darren Coyne', 'Tom Greene'], sponsors: [], attendeeCount: 0, format: 'Joint Session', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'Saffery: Diligence & Transaction Execution', description: 'Financial/commercial diligence workshop. Saffery as sponsor.', date: '', time: '', venue: 'CJBS', week: 6, status: 'planned', speakers: ['Saffery'], sponsors: ['Saffery'], attendeeCount: 0, format: 'Workshop', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'Internal Prep Workshop', description: 'Search Day competition prep — deal evaluation, presentation skills, Q&A practice. Gustavo session.', date: '', time: '', venue: 'CJBS', week: 7, status: 'planned', speakers: ['Taslim', 'Gustavo (9T Capital)'], sponsors: [], attendeeCount: 0, format: 'Workshop', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'Search Day + Competition', description: 'Flagship half-day conference — panels, keynote, competition, networking drinks', date: '', time: '', venue: 'CJBS', week: 8, status: 'planned', speakers: ['Spectra Search', 'Aven Capital', 'Saffery', '9T Capital'], sponsors: ['Spectra Search', 'Aven Capital', 'Saffery', '9T Capital'], attendeeCount: 0, format: 'Conference', postEventNotes: '', createdAt: new Date().toISOString() },
-  { id: id(), name: 'ETA Networking Social — Wrap-up', description: 'End-of-term social — alumni, members, LBS guests. Reflection + open networking.', date: '', time: '', venue: 'Cambridge', week: 9, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Social', postEventNotes: '', createdAt: new Date().toISOString() },
+  { id: id(), name: 'Foundation Week — Internal Setup', description: 'Finalise team structure, begin rebrand, draft LinkedIn post, start alumni mapping, outreach to business schools', date: '', time: '', venue: '', week: 1, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Internal', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Spectra Search: Investor Perspective', description: 'Investor talk/fireside — how they evaluate searchers. Moderated Q&A.', date: '', time: '', venue: 'CJBS', week: 2, status: 'planned', speakers: ['Spectra Search'], sponsors: [], attendeeCount: 0, format: 'Talk + Q&A', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'LBS Dinner + Co-Founder Coffee', description: 'LBS dinner (8-12 people), first co-founder coffee, alumni outreach begins, Search Day venue lock', date: '', time: '', venue: 'London/Cambridge', week: 3, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Dinner + Networking', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Aven Capital: Roll-up Strategy', description: 'Talk/workshop on roll-up strategy — thesis, sourcing, integration', date: '', time: '', venue: 'CJBS', week: 4, status: 'planned', speakers: ['Aven Capital'], sponsors: [], attendeeCount: 0, format: 'Workshop', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Darren Coyne / debtadvisory.ai: Acquisition Finance', description: 'Joint session — deal structuring, debt options, lender relationships', date: '', time: '', venue: 'CJBS', week: 5, status: 'planned', speakers: ['Darren Coyne', 'Tom Greene'], sponsors: [], attendeeCount: 0, format: 'Joint Session', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Saffery: Diligence & Transaction Execution', description: 'Financial/commercial diligence workshop. Saffery as sponsor.', date: '', time: '', venue: 'CJBS', week: 6, status: 'planned', speakers: ['Saffery'], sponsors: ['Saffery'], attendeeCount: 0, format: 'Workshop', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Internal Prep Workshop', description: 'Search Day competition prep — deal evaluation, presentation skills, Q&A practice. Gustavo session.', date: '', time: '', venue: 'CJBS', week: 7, status: 'planned', speakers: ['Taslim', 'Gustavo (9T Capital)'], sponsors: [], attendeeCount: 0, format: 'Workshop', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Search Day + Competition', description: 'Flagship half-day conference — panels, keynote, competition, networking drinks', date: '', time: '', venue: 'CJBS', week: 8, status: 'planned', speakers: ['Spectra Search', 'Aven Capital', 'Saffery', '9T Capital'], sponsors: ['Spectra Search', 'Aven Capital', 'Saffery', '9T Capital'], attendeeCount: 0, format: 'Conference', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
+  { id: id(), name: 'ETA Networking Social — Wrap-up', description: 'End-of-term social — alumni, members, LBS guests. Reflection + open networking.', date: '', time: '', venue: 'Cambridge', week: 9, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Social', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
 ];
 
 // Pre-loaded tasks
@@ -103,12 +105,14 @@ export const useStore = create<S>()(
       contacts: [], team: TEAM, tasks: TASKS, events: EVENTS,
       partnerships: PARTNERSHIPS, content: [], outreach: [], calendar: [],
       settings: { openaiApiKey: '', clubEmail: '', notifyEmail: '' },
+      darkMode: false,
+      toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
 
       add: (key, item) => set(s => ({ [key]: [{ ...item, id: id(), createdAt: new Date().toISOString() }, ...(s as any)[key]] })),
       update: (key, itemId, updates) => set(s => ({ [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) })),
       remove: (key, itemId) => set(s => ({ [key]: (s as any)[key].filter((i: any) => i.id !== itemId) })),
       updateSettings: (upd) => set(s => ({ settings: { ...s.settings, ...upd } })),
     }),
-    { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings }) }
+    { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode }) }
   )
 );

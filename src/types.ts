@@ -61,6 +61,7 @@ export interface CETACEvent {
   attendeeCount: number;
   format: string;
   postEventNotes: string;
+  checklist: { label: string; done: boolean }[];
   createdAt: string;
 }
 
