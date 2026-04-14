@@ -10,6 +10,8 @@ import CRM from './pages/CRM';
 import Content from './pages/Content';
 import Outreach from './pages/Outreach';
 import Chat from './pages/Chat';
+import Import from './pages/Import';
+import Export from './pages/Export';
 import Settings from './pages/Settings';
 
 export default function App() {
@@ -29,6 +31,8 @@ export default function App() {
             <Route path="/content" element={<Content />} />
             <Route path="/outreach" element={<Outreach />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/import" element={<Import />} />
+            <Route path="/export" element={<Export />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

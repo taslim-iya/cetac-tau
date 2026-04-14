@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, BarChart3, Settings, Target } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, BarChart3, Settings, Target, Upload, Download } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const nav = [
@@ -13,6 +13,8 @@ const nav = [
   { path: '/content', icon: BookOpen, label: 'Content' },
   { path: '/outreach', icon: Send, label: 'Outreach' },
   { path: '/chat', icon: MessageSquare, label: 'AI Chat' },
+  { path: '/import', icon: Upload, label: 'Import' },
+  { path: '/export', icon: Download, label: 'Export' },
 ];
 
 export default function Sidebar() {
