@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* Linear White Design System — CETAC */
+:root {
+  --bg: #ffffff;
+  --bg-2: #f9fafb;
+  --bg-3: #f3f4f6;
+  --surface: #ffffff;
+  --surface-hover: #f9fafb;
+  --border: #e5e7eb;
+  --border-subtle: #f0f1f3;
+  --text: #171717;
+  --text-2: #525252;
+  --text-3: #a3a3a3;
+  --accent: #5E6AD2;
+  --accent-hover: #4F5ABF;
+  --accent-light: #EEF0FF;
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --orange: #ea580c;
+  --orange-light: #fff7ed;
+  --red: #dc2626;
+  --red-light: #fef2f2;
+  --yellow: #ca8a04;
+  --yellow-light: #fef9c3;
+  --blue: #2563eb;
+  --blue-light: #dbeafe;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+::selection { background: var(--accent-light); color: var(--accent); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Linear sidebar */
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px; border-radius: 6px; font-size: 13px;
+  font-weight: 500; text-decoration: none; color: var(--text-2);
+  transition: all 0.1s; cursor: pointer; border: none; background: none; width: 100%;
+}
+.nav-item:hover { background: var(--bg-2); color: var(--text); }
+.nav-item-active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+
+/* Editable cell */
+.edit-cell {
+  padding: 6px 10px; border: 1px solid transparent; border-radius: 4px;
+  font-size: 13px; background: transparent; color: var(--text); outline: none;
+  width: 100%; font-family: inherit; transition: border-color 0.1s;
+}
+.edit-cell:hover { border-color: var(--border); }
+.edit-cell:focus { border-color: var(--accent); background: var(--accent-light); }
+
+/* Status badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600;
+  color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border); background: var(--bg-2); position: sticky; top: 0; z-index: 1;
+}
+.data-table td { padding: 4px 8px; border-bottom: 1px solid var(--border-subtle); }
+.data-table tr:hover td { background: var(--surface-hover); }
