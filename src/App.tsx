@@ -21,6 +21,7 @@ import Export from './pages/Export';
 import TeamPortal from './pages/TeamPortal';
 import Settings from './pages/Settings';
 import CommandPalette from './components/CommandPalette';
+import UndoToast from './components/UndoToast';
 import { useStore } from './store';
 
 export default function App() {
@@ -58,6 +59,7 @@ export default function App() {
           </Routes>
         </main>
         <CommandPalette />
+        <UndoToast />
       </div>
     </BrowserRouter>
   );

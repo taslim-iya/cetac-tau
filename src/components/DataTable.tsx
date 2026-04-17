@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, Search, SlidersHorizontal, X, Trash2, GripVertical, Rows3, Rows2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Search, SlidersHorizontal, X, Trash2, GripVertical, Rows3, Rows2, Pin, PinOff, Edit3 } from 'lucide-react';
 import EditableCell from './EditableCell';
 
 interface Column {
@@ -23,11 +23,12 @@ interface Props {
   defaultSort?: { key: string; dir: 'asc' | 'desc' };
   onReorder?: (orderedIds: string[]) => void;
   onBulkDelete?: (ids: string[]) => void;
+  onBulkUpdate?: (ids: string[], updates: Record<string, any>) => void;
 }
 
 type DropPos = 'above' | 'below';
 
-export default function DataTable({ columns, data, onUpdate, onDelete, entityName, defaultSort, onReorder, onBulkDelete }: Props) {
+export default function DataTable({ columns, data, onUpdate, onDelete, entityName, defaultSort, onReorder, onBulkDelete, onBulkUpdate }: Props) {
   const storageKey = `dt-${entityName || 'default'}`;
   const [search, setSearch] = useState('');
   const [sortKey, setSortKey] = useState(defaultSort?.key || '');
@@ -55,9 +56,18 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
   const [colWidths, setColWidths] = useState<Record<string, number>>(() => {
     try { return JSON.parse(localStorage.getItem(`${storageKey}-widths`) || '{}'); } catch { return {}; }
   });
+  const [pinnedKeys, setPinnedKeys] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(`${storageKey}-pinned`) || '[]'); } catch { return []; }
+  });
+  const [bulkEdit, setBulkEdit] = useState<{ col: string; val: string } | null>(null);
 
   useEffect(() => { localStorage.setItem(`${storageKey}-order`, JSON.stringify(colOrder)); }, [colOrder, storageKey]);
   useEffect(() => { localStorage.setItem(`${storageKey}-widths`, JSON.stringify(colWidths)); }, [colWidths, storageKey]);
+  useEffect(() => { localStorage.setItem(`${storageKey}-pinned`, JSON.stringify(pinnedKeys)); }, [pinnedKeys, storageKey]);
+
+  const togglePin = (key: string) => {
+    setPinnedKeys(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+  };
 
   // Drag state
   const [draggingRowId, setDraggingRowId] = useState<string | null>(null);
@@ -81,12 +91,28 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
     });
   };
 
-  // Ordered + visible columns
+  // Ordered + visible columns (pinned first)
   const orderedCols = useMemo(() => {
     const map = new Map(columns.map(c => [c.key, c]));
-    return colOrder.map(k => map.get(k)).filter(Boolean) as Column[];
-  }, [columns, colOrder]);
+    const inOrder = colOrder.map(k => map.get(k)).filter(Boolean) as Column[];
+    const pinned = pinnedKeys.map(k => map.get(k)).filter(Boolean) as Column[];
+    const rest = inOrder.filter(c => !pinnedKeys.includes(c.key));
+    return [...pinned, ...rest];
+  }, [columns, colOrder, pinnedKeys]);
   const visibleCols = orderedCols.filter(c => !hiddenCols.has(c.key));
+
+  // Cumulative left offset for pinned columns (for sticky positioning)
+  const pinOffsets = useMemo(() => {
+    const offsets: Record<string, number> = {};
+    let left = 0;
+    const leadingPadding = (onBulkDelete !== undefined ? 28 : 0) + (onReorder ? 22 : 0);
+    for (const c of visibleCols) {
+      if (!pinnedKeys.includes(c.key)) break;
+      offsets[c.key] = leadingPadding + left;
+      left += (colWidths[c.key] || c.width || 160);
+    }
+    return offsets;
+  }, [visibleCols, pinnedKeys, colWidths, onBulkDelete, onReorder]);
 
   const filtered = useMemo(() => {
     let rows = [...data];
@@ -220,8 +246,10 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
   const resetLayout = () => {
     setColOrder(columns.map(c => c.key));
     setColWidths({});
+    setPinnedKeys([]);
     localStorage.removeItem(`${storageKey}-order`);
     localStorage.removeItem(`${storageKey}-widths`);
+    localStorage.removeItem(`${storageKey}-pinned`);
   };
 
   return (
@@ -230,8 +258,44 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
       {selected.size > 0 && (
         <div className="bulk-bar">
           <span>{selected.size} selected</span>
+          {onBulkUpdate && (
+            <button onClick={() => setBulkEdit({ col: '', val: '' })}><Edit3 size={12} /> Edit</button>
+          )}
           <button onClick={bulkDelete}><Trash2 size={12} /> Delete</button>
           <button onClick={() => setSelected(new Set())} style={{ marginLeft: 'auto' }}>Clear</button>
+        </div>
+      )}
+
+      {/* Bulk edit popover */}
+      {bulkEdit && onBulkUpdate && (
+        <div className="glass" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 12, marginBottom: 10, border: '1px solid var(--border-strong)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-md)' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)' }}>Set field:</span>
+          <select className="input" value={bulkEdit.col} onChange={e => setBulkEdit(b => b && ({ ...b, col: e.target.value, val: '' }))} style={{ fontSize: 12, padding: '6px 10px' }}>
+            <option value="">— choose field —</option>
+            {visibleCols.filter(c => !c.render).map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+          </select>
+          {bulkEdit.col && (() => {
+            const col = columns.find(c => c.key === bulkEdit.col);
+            if (col?.type === 'select' && col.options) {
+              return (
+                <select className="input" value={bulkEdit.val} onChange={e => setBulkEdit(b => b && ({ ...b, val: e.target.value }))} style={{ fontSize: 12, padding: '6px 10px' }}>
+                  <option value="">— value —</option>
+                  {col.options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              );
+            }
+            return (
+              <input className="input" value={bulkEdit.val} onChange={e => setBulkEdit(b => b && ({ ...b, val: e.target.value }))} type={col?.type === 'date' ? 'date' : 'text'} placeholder="new value" style={{ fontSize: 12, padding: '6px 10px' }} />
+            );
+          })()}
+          <button className="btn btn-primary" style={{ padding: '6px 12px', fontSize: 12 }} disabled={!bulkEdit.col || !bulkEdit.val} onClick={() => {
+            if (!bulkEdit.col || !bulkEdit.val) return;
+            const ids = Array.from(selected);
+            onBulkUpdate(ids, { [bulkEdit.col]: bulkEdit.val });
+            setBulkEdit(null);
+            setSelected(new Set());
+          }}>Apply to {selected.size}</button>
+          <button className="btn btn-secondary" style={{ padding: '6px 10px', fontSize: 12, marginLeft: 'auto' }} onClick={() => setBulkEdit(null)}>Cancel</button>
         </div>
       )}
 
@@ -271,14 +335,21 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
             <SlidersHorizontal size={12} /> Columns
           </button>
           {showColPicker && (
-            <div className="glass" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: 8, zIndex: 50, minWidth: 200, boxShadow: 'var(--shadow-md)' }}>
-              {orderedCols.map(c => (
-                <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', fontSize: 12, cursor: 'pointer', borderRadius: 6, color: 'var(--text-2)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <input type="checkbox" checked={!hiddenCols.has(c.key)} onChange={() => toggleCol(c.key)} style={{ accentColor: 'var(--accent)' }} />
-                  {c.label}
-                </label>
-              ))}
+            <div className="glass" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: 8, zIndex: 50, minWidth: 240, boxShadow: 'var(--shadow-md)' }}>
+              {orderedCols.map(c => {
+                const isPinned = pinnedKeys.includes(c.key);
+                return (
+                  <div key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', fontSize: 12, borderRadius: 6, color: 'var(--text-2)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <input type="checkbox" checked={!hiddenCols.has(c.key)} onChange={() => toggleCol(c.key)} style={{ accentColor: 'var(--accent)' }} />
+                    <span style={{ flex: 1 }}>{c.label}</span>
+                    <button onClick={() => togglePin(c.key)} title={isPinned ? 'Unpin' : 'Pin left'}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: isPinned ? 'var(--accent)' : 'var(--text-4)' }}>
+                      {isPinned ? <Pin size={12} /> : <PinOff size={12} />}
+                    </button>
+                  </div>
+                );
+              })}
               <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: 6, paddingTop: 6 }}>
                 <button onClick={resetLayout} style={{ width: '100%', textAlign: 'left', padding: '6px 8px', fontSize: 11, color: 'var(--text-3)', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 6 }}>Reset layout</button>
               </div>
@@ -302,6 +373,10 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
               {canDragRows && <th style={{ width: 22 }}></th>}
               {visibleCols.map(c => {
                 const w = colWidths[c.key] || c.width;
+                const isPinned = pinnedKeys.includes(c.key);
+                const pinStyle: React.CSSProperties = isPinned
+                  ? { position: 'sticky', left: pinOffsets[c.key] ?? 0, zIndex: 3, boxShadow: '2px 0 0 0 var(--border-subtle)' }
+                  : {};
                 return (
                   <th
                     key={c.key}
@@ -312,9 +387,10 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
                     onDragEnd={onColDragEnd}
                     onClick={() => toggleSort(c.key)}
                     className={[draggingCol === c.key ? 'col-dragging' : '', colDropTarget === c.key ? 'col-drop-target' : ''].join(' ')}
-                    style={{ cursor: draggingCol ? 'grabbing' : 'pointer', userSelect: 'none', width: w, whiteSpace: 'nowrap', position: 'relative' }}
+                    style={{ cursor: draggingCol ? 'grabbing' : 'pointer', userSelect: 'none', width: w, whiteSpace: 'nowrap', position: 'relative', ...pinStyle }}
                   >
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      {isPinned && <Pin size={10} style={{ color: 'var(--accent)' }} />}
                       {c.label}
                       {sortKey === c.key ? (sortDir === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.3 }} />}
                     </span>
@@ -360,8 +436,13 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
                       </span>
                     </td>
                   )}
-                  {visibleCols.map(c => (
-                    <td key={c.key}>
+                  {visibleCols.map(c => {
+                    const isPinned = pinnedKeys.includes(c.key);
+                    const pinStyle: React.CSSProperties = isPinned
+                      ? { position: 'sticky', left: pinOffsets[c.key] ?? 0, zIndex: 1, background: 'var(--surface)', boxShadow: '2px 0 0 0 var(--border-subtle)' }
+                      : {};
+                    return (
+                    <td key={c.key} style={pinStyle}>
                       {c.render ? c.render(row[c.key], row) : (
                         <EditableCell
                           value={Array.isArray(row[c.key]) ? row[c.key].join(', ') : String(row[c.key] || '')}
@@ -380,7 +461,8 @@ export default function DataTable({ columns, data, onUpdate, onDelete, entityNam
                         />
                       )}
                     </td>
-                  ))}
+                    );
+                  })}
                   <td>
                     <button onClick={() => onDelete(row.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3 }} title="Delete">
                       <Trash2 size={13} color="var(--red)" />

@@ -3,18 +3,30 @@ import { persist } from 'zustand/middleware';
 import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, Outreach, CalendarEvent, AppSettings } from './types';
 import { id } from './lib/utils';
 
+export interface UndoSnapshot {
+  key: string;
+  prev: any[];
+  message: string;
+  at: number;
+}
+
 interface S {
   contacts: Contact[]; team: TeamMember[]; tasks: Task[]; events: CETACEvent[];
   partnerships: Partnership[]; content: ContentItem[]; outreach: Outreach[];
   calendar: CalendarEvent[]; settings: AppSettings;
   darkMode: boolean;
   toggleDarkMode: () => void;
+  lastUndo: UndoSnapshot | null;
   // Generic CRUD
   add: <T extends { id: string }>(key: string, item: Omit<T, 'id' | 'createdAt'>) => void;
+  addMany: (key: string, items: any[]) => void;
   update: (key: string, itemId: string, updates: Record<string, any>) => void;
+  updateMany: (key: string, ids: string[], updates: Record<string, any>) => void;
   remove: (key: string, itemId: string) => void;
   removeMany: (key: string, ids: string[]) => void;
   reorder: (key: string, orderedIds: string[]) => void;
+  undo: () => void;
+  clearUndo: () => void;
   updateSettings: (s: Partial<AppSettings>) => void;
 }
 
@@ -109,13 +121,35 @@ export const useStore = create<S>()(
       settings: { openaiApiKey: '', clubEmail: '', notifyEmail: '' },
       darkMode: false,
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
+      lastUndo: null,
 
       add: (key, item) => set(s => ({ [key]: [{ ...item, id: id(), createdAt: new Date().toISOString() }, ...(s as any)[key]] })),
+      addMany: (key, items) => set(s => ({
+        [key]: [
+          ...items.map((i: any) => ({ ...i, id: i.id || id(), createdAt: i.createdAt || new Date().toISOString() })),
+          ...(s as any)[key],
+        ],
+      })),
       update: (key, itemId, updates) => set(s => ({ [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) })),
-      remove: (key, itemId) => set(s => ({ [key]: (s as any)[key].filter((i: any) => i.id !== itemId) })),
+      updateMany: (key, ids, updates) => set(s => {
+        const idSet = new Set(ids);
+        return { [key]: (s as any)[key].map((i: any) => idSet.has(i.id) ? { ...i, ...updates } : i) };
+      }),
+      remove: (key, itemId) => set(s => {
+        const prev = [...((s as any)[key] as any[])];
+        const item = prev.find(i => i.id === itemId);
+        return {
+          [key]: prev.filter((i: any) => i.id !== itemId),
+          lastUndo: { key, prev, message: item ? `Deleted "${item.name || item.title || 'item'}"` : 'Deleted item', at: Date.now() },
+        };
+      }),
       removeMany: (key, ids) => set(s => {
-        const set = new Set(ids);
-        return { [key]: (s as any)[key].filter((i: any) => !set.has(i.id)) };
+        const prev = [...((s as any)[key] as any[])];
+        const ids2 = new Set(ids);
+        return {
+          [key]: prev.filter((i: any) => !ids2.has(i.id)),
+          lastUndo: { key, prev, message: `Deleted ${ids.length} item${ids.length === 1 ? '' : 's'}`, at: Date.now() },
+        };
       }),
       reorder: (key, orderedIds) => set(s => {
         const arr = (s as any)[key] as any[];
@@ -124,6 +158,11 @@ export const useStore = create<S>()(
         const missing = arr.filter((i: any) => !orderedIds.includes(i.id));
         return { [key]: [...ordered, ...missing] };
       }),
+      undo: () => set(s => {
+        if (!s.lastUndo) return {};
+        return { [s.lastUndo.key]: s.lastUndo.prev, lastUndo: null };
+      }),
+      clearUndo: () => set({ lastUndo: null }),
       updateSettings: (upd) => set(s => ({ settings: { ...s.settings, ...upd } })),
     }),
     { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode }) }

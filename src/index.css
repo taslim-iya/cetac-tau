@@ -314,6 +314,212 @@ a { color: inherit; }
 }
 .bulk-bar button:hover { background: rgba(255,255,255,0.24); }
 
+/* ─── Undo toast ──────────────────────────────────────── */
+.toast-wrap {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  z-index: 900;
+  pointer-events: none;
+  animation: toastIn 220ms var(--ease);
+}
+.toast {
+  pointer-events: auto;
+  min-width: 320px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+.toast-body {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px;
+  color: var(--text);
+}
+.toast-action {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-left: auto;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.toast-action:hover { background: var(--surface-hover); }
+.toast-close {
+  background: none; border: none; padding: 4px;
+  cursor: pointer; color: var(--text-3); border-radius: 5px;
+}
+.toast-close:hover { background: var(--bg-3); color: var(--text-2); }
+.toast-progress {
+  height: 2px;
+  background: var(--brand-gradient);
+  transition: width 80ms linear;
+}
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+/* ─── Row drawer ──────────────────────────────────────── */
+.drawer-overlay {
+  position: fixed; inset: 0;
+  background: rgba(8, 10, 18, 0.35);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 800;
+  animation: fadeIn 140ms var(--ease);
+}
+.drawer {
+  position: fixed; right: 0; top: 0; bottom: 0;
+  width: min(540px, 96vw);
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  z-index: 801;
+  display: flex; flex-direction: column;
+  animation: drawerIn 240ms var(--ease);
+}
+.drawer-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.drawer-body {
+  flex: 1; overflow: auto;
+  padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.drawer-field label {
+  display: block;
+  font-size: 11px; font-weight: 600;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+@keyframes drawerIn { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ─── Filter chips ────────────────────────────────────── */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t-fast) var(--ease);
+  font-family: inherit;
+}
+.chip:hover { border-color: var(--border-strong); color: var(--text); }
+.chip[data-active="true"] {
+  background: var(--accent-soft);
+  border-color: var(--accent-ring);
+  color: var(--accent-pressed);
+}
+.chip-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  color: var(--text-3);
+}
+.chip[data-active="true"] .chip-count {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent-pressed);
+}
+
+/* ─── Kanban ──────────────────────────────────────────── */
+.kanban {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(240px, 1fr));
+  gap: 14px;
+  overflow-x: auto;
+}
+.kanban-col {
+  background: var(--bg-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-lg);
+  padding: 12px;
+  min-height: 200px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.kanban-col.dropping { background: var(--accent-soft); border-color: var(--accent-ring); }
+.kanban-col-head {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 650;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 4px 6px;
+}
+.kanban-col-dot { width: 8px; height: 8px; border-radius: 50%; }
+.kanban-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  box-shadow: var(--shadow-xs);
+  cursor: grab;
+  transition: box-shadow var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform var(--t-fast) var(--ease);
+  font-size: 13px;
+}
+.kanban-card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
+.kanban-card:active { cursor: grabbing; }
+.kanban-card.dragging { opacity: 0.45; transform: rotate(-1deg); }
+
+/* ─── Group row ───────────────────────────────────────── */
+.group-row td {
+  background: var(--bg-2) !important;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  padding: 10px 14px !important;
+  cursor: pointer;
+}
+.group-row:hover td { background: var(--bg-3) !important; }
+
+/* ─── Mention popover ─────────────────────────────────── */
+.mention-pop {
+  position: absolute;
+  z-index: 60;
+  min-width: 200px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-md);
+  padding: 6px;
+  max-height: 240px;
+  overflow: auto;
+}
+.mention-item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+}
+.mention-item[data-active="true"] { background: var(--accent-soft); color: var(--accent-pressed); }
+.mention-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-size: 10px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
 /* ─── Command palette ─────────────────────────────────── */
 .cmdk-overlay {
   position: fixed; inset: 0;
