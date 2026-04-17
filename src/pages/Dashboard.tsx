@@ -1,9 +1,9 @@
-import { CheckSquare, Users, Calendar, Handshake, Target, AlertTriangle, Clock, TrendingUp } from 'lucide-react';
+import { CheckSquare, Users, Calendar, Handshake, AlertTriangle, Clock, TrendingUp, ArrowUpRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../store';
 
 export default function Dashboard() {
-  const { tasks, team, events, partnerships, contacts, content, outreach } = useStore();
+  const { tasks, team, events, partnerships, contacts } = useStore();
   const todo = tasks.filter(t => t.status === 'todo').length;
   const inProgress = tasks.filter(t => t.status === 'in_progress').length;
   const done = tasks.filter(t => t.status === 'done').length;
@@ -11,32 +11,30 @@ export default function Dashboard() {
   const activeTeam = team.filter(t => t.status === 'active').length;
   const now = new Date();
 
-  // Overdue tasks
   const overdue = tasks.filter(t => t.status !== 'done' && t.dueDate && new Date(t.dueDate) < now);
 
-  // Cold partnerships (no contact 14+ days)
   const cold = partnerships.filter(p => {
     if (p.status === 'active') return false;
     if (!p.lastContactDate) return true;
     return (now.getTime() - new Date(p.lastContactDate).getTime()) > 14 * 86400000;
   });
 
-  // Search Day countdown
   const searchDayEvent = events.find(e => e.week === 8);
   const searchDayDate = searchDayEvent?.date ? new Date(searchDayEvent.date) : null;
   const daysUntilSearchDay = searchDayDate ? Math.ceil((searchDayDate.getTime() - now.getTime()) / 86400000) : null;
 
-  // Stats
+  const totalTasks = tasks.length || 1;
+  const pctDone = Math.round((done / totalTasks) * 100);
+
   const stats = [
-    { label: 'To Do', value: todo, icon: CheckSquare, color: '#5E6AD2', link: '/tasks' },
-    { label: 'In Progress', value: inProgress, icon: Clock, color: '#ea580c', link: '/tasks' },
-    { label: 'Done', value: done, icon: CheckSquare, color: '#16a34a', link: '/tasks' },
-    { label: 'Team', value: activeTeam, icon: Users, color: '#2563eb', link: '/team' },
-    { label: 'Events', value: events.length, icon: Calendar, color: '#7c3aed', link: '/events' },
-    { label: 'Contacts', value: contacts.length, icon: Users, color: '#ca8a04', link: '/crm' },
+    { label: 'To Do',       value: todo,         icon: CheckSquare, tint: 'var(--accent)',  link: '/tasks' },
+    { label: 'In Progress', value: inProgress,   icon: Clock,       tint: 'var(--orange)',  link: '/tasks' },
+    { label: 'Done',        value: done,         icon: CheckSquare, tint: 'var(--green)',   link: '/tasks' },
+    { label: 'Team',        value: activeTeam,   icon: Users,       tint: 'var(--blue)',    link: '/team' },
+    { label: 'Events',      value: events.length,icon: Calendar,    tint: '#7c5cd8',        link: '/events' },
+    { label: 'Contacts',    value: contacts.length, icon: Users,    tint: 'var(--yellow)',  link: '/crm' },
   ];
 
-  // Burn-down by week
   const weekData = [1,2,3,4,5,6,7,8,9].map(w => {
     const wt = tasks.filter(t => t.week === w);
     return { week: w, total: wt.length, done: wt.filter(t => t.status === 'done').length };
@@ -44,120 +42,149 @@ export default function Dashboard() {
   const maxTasks = Math.max(...weekData.map(w => w.total), 1);
 
   return (
-    <div style={{ padding: '32px 40px', maxWidth: 1100 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+    <div style={{ padding: '36px 44px', maxWidth: 1180, margin: '0 auto' }}>
+      {/* Hero */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 28 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>CETAC Dashboard</h1>
-          <p style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 2 }}>Cambridge ETA & Acquisition Club</p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent-pressed)', fontSize: 11, fontWeight: 600, marginBottom: 10, border: '1px solid var(--accent-ring)' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
+            9-Week Term · {pctDone}% complete
+          </div>
+          <h1 style={{ fontSize: 28, fontWeight: 700, lineHeight: 1.1 }}>CETAC Dashboard</h1>
+          <p style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 6 }}>Cambridge ETA &amp; Acquisition Club — execution at a glance.</p>
         </div>
         {daysUntilSearchDay !== null && daysUntilSearchDay > 0 && (
-          <div style={{ textAlign: 'right', padding: '10px 16px', background: 'var(--accent-light)', borderRadius: 8, border: '1px solid rgba(94,106,210,0.15)' }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--accent)' }}>{daysUntilSearchDay}</div>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Days to Search Day</div>
+          <div className="hero-pill" style={{ minWidth: 180, textAlign: 'right' }}>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.85 }}>Search Day</div>
+            <div style={{ fontSize: 34, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.05, marginTop: 2 }}>{daysUntilSearchDay}<span style={{ fontSize: 14, fontWeight: 600, opacity: 0.85, marginLeft: 4 }}>days</span></div>
+            <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>until flagship event</div>
           </div>
         )}
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
         {stats.map(s => (
-          <Link key={s.label} to={s.link} style={{ textDecoration: 'none', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '14px 12px', transition: 'border-color 0.1s' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = s.color} onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
-            <s.icon size={15} color={s.color} style={{ marginBottom: 6 }} />
-            <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)' }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{s.label}</div>
+          <Link key={s.label} to={s.link} className="stat-tile">
+            <div className="stat-icon" style={{ background: `color-mix(in srgb, ${s.tint} 14%, transparent)`, color: s.tint }}>
+              <s.icon size={15} strokeWidth={2} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>{s.value}</div>
+              <ArrowUpRight size={14} color="var(--text-4)" />
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6, fontWeight: 500 }}>{s.label}</div>
           </Link>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      {/* Main grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16, marginBottom: 16 }}>
         {/* Burn-down chart */}
-        <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-            <TrendingUp size={15} color="var(--accent)" />
-            <h3 style={{ fontSize: 14, fontWeight: 600 }}>9-Week Progress</h3>
+        <div className="card" style={{ padding: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--brand-gradient-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <TrendingUp size={14} color="var(--accent)" strokeWidth={2} />
+              </div>
+              <h3 style={{ fontSize: 14, fontWeight: 650 }}>9-Week Progress</h3>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>{done} of {totalTasks} tasks done</div>
           </div>
-          <svg width="100%" height="160" viewBox="0 0 360 160">
+          <svg width="100%" height="180" viewBox="0 0 400 180" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.55" />
+              </linearGradient>
+            </defs>
             {weekData.map((w, i) => {
-              const x = i * 40 + 8;
-              const totalH = (w.total / maxTasks) * 120;
-              const doneH = (w.done / maxTasks) * 120;
+              const x = i * 42 + 12;
+              const totalH = (w.total / maxTasks) * 130;
+              const doneH = (w.done / maxTasks) * 130;
               return (
                 <g key={w.week}>
-                  {/* Total bar */}
-                  <rect x={x} y={140 - totalH} width={28} height={totalH} rx={3} fill="var(--bg-3)" />
-                  {/* Done bar */}
-                  <rect x={x} y={140 - doneH} width={28} height={doneH} rx={3} fill="var(--accent)" opacity={0.8} />
-                  {/* Label */}
-                  <text x={x + 14} y={155} textAnchor="middle" style={{ fontSize: 10, fill: 'var(--text-3)' }}>W{w.week}</text>
-                  {/* Count */}
-                  <text x={x + 14} y={140 - totalH - 4} textAnchor="middle" style={{ fontSize: 9, fill: 'var(--text-3)' }}>{w.done}/{w.total}</text>
+                  <rect x={x} y={150 - totalH} width={30} height={totalH} rx={4} fill="var(--bg-3)" />
+                  <rect x={x} y={150 - doneH} width={30} height={doneH} rx={4} fill="url(#barGradient)" />
+                  <text x={x + 15} y={168} textAnchor="middle" style={{ fontSize: 10, fill: 'var(--text-3)', fontWeight: 500 }}>W{w.week}</text>
+                  <text x={x + 15} y={150 - totalH - 6} textAnchor="middle" style={{ fontSize: 9, fill: 'var(--text-3)' }}>{w.done}/{w.total}</text>
                 </g>
               );
             })}
           </svg>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 4 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)' }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--accent)' }} /> Done
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', marginTop: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-3)' }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--accent)' }} /> Done
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-3)' }}>
-              <div style={{ width: 8, height: 8, borderRadius: 2, background: 'var(--bg-3)' }} /> Total
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-3)' }}>
+              <div style={{ width: 10, height: 10, borderRadius: 3, background: 'var(--bg-3)' }} /> Total
             </div>
           </div>
         </div>
 
         {/* Alerts */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Overdue */}
           {overdue.length > 0 && (
-            <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14, borderLeft: '3px solid var(--red)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <AlertTriangle size={14} color="var(--red)" />
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--red)' }}>Overdue Tasks ({overdue.length})</span>
+            <div className="alert-card" style={{ ['--rail' as any]: 'var(--red)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--red-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={13} color="var(--red)" strokeWidth={2} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)' }}>Overdue Tasks</span>
+                <span className="badge" style={{ background: 'var(--red-light)', color: 'var(--red)' }}>{overdue.length}</span>
               </div>
               {overdue.slice(0, 4).map(t => (
-                <div key={t.id} style={{ fontSize: 12, color: 'var(--text-2)', padding: '3px 0' }}>• {t.title}</div>
+                <div key={t.id} style={{ fontSize: 12, color: 'var(--text-2)', padding: '3px 0' }}>· {t.title}</div>
               ))}
             </div>
           )}
 
-          {/* Cold partnerships */}
           {cold.length > 0 && (
-            <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14, borderLeft: '3px solid var(--yellow)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <Handshake size={14} color="var(--yellow)" />
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--yellow)' }}>Going Cold ({cold.length})</span>
+            <div className="alert-card" style={{ ['--rail' as any]: 'var(--yellow)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--yellow-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Handshake size={13} color="var(--yellow)" strokeWidth={2} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)' }}>Going Cold</span>
+                <span className="badge" style={{ background: 'var(--yellow-light)', color: 'var(--yellow)' }}>{cold.length}</span>
               </div>
               {cold.slice(0, 4).map(p => (
-                <div key={p.id} style={{ fontSize: 12, color: 'var(--text-2)', padding: '3px 0' }}>• {p.name} — {p.nextAction || 'No action set'}</div>
+                <div key={p.id} style={{ fontSize: 12, color: 'var(--text-2)', padding: '3px 0' }}>· {p.name} — {p.nextAction || 'No action set'}</div>
               ))}
             </div>
           )}
 
-          {/* Urgent */}
           {urgent > 0 && (
-            <div style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 14, borderLeft: '3px solid var(--orange)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <AlertTriangle size={14} color="var(--orange)" />
-                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--orange)' }}>Urgent Tasks ({urgent})</span>
+            <div className="alert-card" style={{ ['--rail' as any]: 'var(--orange)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ width: 22, height: 22, borderRadius: 6, background: 'var(--orange-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={13} color="var(--orange)" strokeWidth={2} />
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)' }}>Urgent</span>
+                <span className="badge" style={{ background: 'var(--orange-light)', color: 'var(--orange)' }}>{urgent}</span>
               </div>
               {tasks.filter(t => t.priority === 'urgent' && t.status !== 'done').slice(0, 4).map(t => (
-                <div key={t.id} style={{ fontSize: 12, color: 'var(--text-2)', padding: '3px 0' }}>• {t.title}</div>
+                <div key={t.id} style={{ fontSize: 12, color: 'var(--text-2)', padding: '3px 0' }}>· {t.title}</div>
               ))}
             </div>
           )}
         </div>
       </div>
 
-      {/* Vacant roles */}
-      <div style={{ padding: '12px 16px', background: 'var(--yellow-light)', border: '1px solid rgba(202,138,4,0.15)', borderRadius: 8, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <AlertTriangle size={14} color="var(--yellow)" style={{ marginTop: 2, flexShrink: 0 }} />
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--yellow)' }}>11 Vacant Roles</div>
-          <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 2 }}>
-            <Link to="/roles" style={{ color: 'var(--accent)', fontWeight: 600, textDecoration: 'none' }}>View & assign roles →</Link>
+      {/* Vacant roles banner */}
+      <div className="alert-card" style={{ ['--rail' as any]: 'var(--yellow)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--yellow-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <AlertTriangle size={15} color="var(--yellow)" strokeWidth={2} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 650, color: 'var(--text)' }}>11 Vacant Roles</div>
+            <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>Assign leads for event ops, partnerships and marketing.</div>
           </div>
         </div>
+        <Link to="/roles" className="btn btn-secondary">
+          Assign <ArrowUpRight size={14} />
+        </Link>
       </div>
     </div>
   );

@@ -75,23 +75,23 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
   return (
     <div>
       {/* Toolbar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
-          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${entityName || 'data'}...`}
-            style={{ width: '100%', padding: '7px 10px 7px 30px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 12, outline: 'none', background: 'var(--bg)', color: 'var(--text)', boxSizing: 'border-box' }} />
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ position: 'relative', flex: '1 1 220px', maxWidth: 300 }}>
+          <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
+          <input className="input" value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${entityName || 'data'}...`}
+            style={{ width: '100%', paddingLeft: 34 }} />
         </div>
 
         {/* Column filter */}
-        <select value={filterCol} onChange={e => { setFilterCol(e.target.value); setFilterVal(''); }}
-          style={{ padding: '7px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, background: 'var(--bg)', color: 'var(--text)' }}>
+        <select className="input" value={filterCol} onChange={e => { setFilterCol(e.target.value); setFilterVal(''); }}
+          style={{ fontSize: 12, paddingTop: 7, paddingBottom: 7 }}>
           <option value="">Filter by...</option>
           {visibleCols.filter(c => c.type === 'select').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
         </select>
         {filterCol && (
           <>
-            <select value={filterVal} onChange={e => setFilterVal(e.target.value)}
-              style={{ padding: '7px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, background: 'var(--bg)', color: 'var(--text)' }}>
+            <select className="input" value={filterVal} onChange={e => setFilterVal(e.target.value)}
+              style={{ fontSize: 12, paddingTop: 7, paddingBottom: 7 }}>
               <option value="">All</option>
               {columns.find(c => c.key === filterCol)?.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -103,15 +103,14 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
 
         {/* Column visibility */}
         <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowColPicker(!showColPicker)}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, background: 'var(--bg)', color: 'var(--text-2)', cursor: 'pointer', fontWeight: 500 }}>
+          <button className="btn btn-secondary" onClick={() => setShowColPicker(!showColPicker)} style={{ fontSize: 12, padding: '7px 12px' }}>
             <SlidersHorizontal size={12} /> Columns
           </button>
           {showColPicker && (
-            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 8, zIndex: 50, minWidth: 160, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+            <div className="glass" style={{ position: 'absolute', top: '100%', right: 0, marginTop: 6, border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: 8, zIndex: 50, minWidth: 180, boxShadow: 'var(--shadow-md)' }}>
               {columns.map(c => (
-                <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', fontSize: 11, cursor: 'pointer', borderRadius: 4 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', fontSize: 12, cursor: 'pointer', borderRadius: 6, color: 'var(--text-2)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-hover)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                   <input type="checkbox" checked={!hiddenCols.has(c.key)} onChange={() => toggleCol(c.key)} style={{ accentColor: 'var(--accent)' }} />
                   {c.label}
                 </label>
@@ -120,11 +119,11 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
           )}
         </div>
 
-        <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>{filtered.length} of {data.length}</div>
+        <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)', fontWeight: 500 }}>{filtered.length} of {data.length}</div>
       </div>
 
       {/* Table */}
-      <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'auto' }}>
+      <div className="card" style={{ overflow: 'auto' }}>
         <table className="data-table">
           <thead>
             <tr>
