@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { UserPlus, Check, Clock, AlertTriangle } from 'lucide-react';
 import EditableCell from '../components/EditableCell';
-import { useStore } from '../store';
 import { id } from '../lib/utils';
 
 interface Role { id: string; title: string; description: string; skills: string; candidates: string; status: 'vacant' | 'interviewing' | 'filled'; filledBy: string; }
@@ -42,57 +41,64 @@ export default function Roles() {
 
   return (
     <div style={{ padding: '32px 40px', maxWidth: 1000 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>Role Assignments</h1>
-          <p style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 2 }}>Fill critical team positions</p>
+          <h1>Role Assignments</h1>
+          <p>Fill critical team positions</p>
         </div>
-        <button onClick={addRole} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: 'none', borderRadius: 6, background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={addRole} className="btn-primary">
           <UserPlus size={14} /> Add Role
         </button>
       </div>
 
       {/* Summary */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 24 }}>
         {[{ label: 'Vacant', count: vacant, color: 'var(--red)', bg: 'var(--red-light)' },
           { label: 'Interviewing', count: interviewing, color: 'var(--yellow)', bg: 'var(--yellow-light)' },
           { label: 'Filled', count: filled, color: 'var(--green)', bg: 'var(--green-light)' }].map(s => (
-          <div key={s.label} style={{ flex: 1, padding: '12px 16px', borderRadius: 8, background: s.bg, border: `1px solid ${s.color}20` }}>
-            <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.count}</div>
+          <div key={s.label} className="card" style={{ padding: '14px 18px', borderTop: `3px solid ${s.color}` }}>
+            <div style={{ fontSize: 22, fontWeight: 700, color: s.color, fontFamily: 'var(--serif)' }}>{s.count}</div>
             <div style={{ fontSize: 11, color: s.color, fontWeight: 600 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
-      {/* Roles list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Roles grid — fixed layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 12 }}>
         {roles.map(r => {
           const Icon = STATUS_ICON[r.status];
           return (
-            <div key={r.id} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '14px 18px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <Icon size={14} color={STATUS_COLOR[r.status]} />
-                    <EditableCell value={r.title} onChange={v => updateRole(r.id, { title: v })} placeholder="Role title" className="font-semibold" />
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 6 }}>{r.description}</div>
+            <div key={r.id} className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {/* Card header */}
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: STATUS_BG[r.status] }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                  <Icon size={14} color={STATUS_COLOR[r.status]} style={{ flexShrink: 0 }} />
+                  <EditableCell value={r.title} onChange={v => updateRole(r.id, { title: v })} placeholder="Role title" />
                 </div>
-                <EditableCell value={r.status} onChange={v => updateRole(r.id, { status: v as any })} type="select" options={STATUS_OPTS} />
+                <div style={{ flexShrink: 0 }}>
+                  <EditableCell value={r.status} onChange={v => updateRole(r.id, { status: v as any })} type="select" options={STATUS_OPTS} />
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 8 }}>
-                <div>
-                  <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase' }}>Skills Needed</label>
-                  <EditableCell value={r.skills} onChange={v => updateRole(r.id, { skills: v })} placeholder="Required skills" />
+              {/* Card body */}
+              <div style={{ padding: '12px 16px', flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.5, minHeight: 36 }}>
+                  {r.description || 'No description'}
                 </div>
-                <div>
-                  <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase' }}>Candidates Approached</label>
-                  <EditableCell value={r.candidates} onChange={v => updateRole(r.id, { candidates: v })} placeholder="Names..." />
-                </div>
-                <div>
-                  <label style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase' }}>Filled By</label>
-                  <EditableCell value={r.filledBy} onChange={v => updateRole(r.id, { filledBy: v })} placeholder="Assigned person" />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 2 }}>Skills Needed</label>
+                    <EditableCell value={r.skills} onChange={v => updateRole(r.id, { skills: v })} placeholder="Required skills" />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 2 }}>Candidates</label>
+                    <EditableCell value={r.candidates} onChange={v => updateRole(r.id, { candidates: v })} placeholder="Names..." />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 2 }}>Filled By</label>
+                    <EditableCell value={r.filledBy} onChange={v => updateRole(r.id, { filledBy: v })} placeholder="Assigned person" />
+                  </div>
                 </div>
               </div>
             </div>

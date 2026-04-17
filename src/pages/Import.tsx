@@ -5,7 +5,7 @@ import { parseSpreadsheet, extractText, detectEntityType, mapToEntity, aiParseTe
 
 const ENTITY_LABELS: Record<string, string> = {
   contacts: 'CRM Contacts', tasks: 'Tasks', events: 'Events',
-  partnerships: 'Partnerships', outreach: 'Outreach', content: 'Content', team: 'Team Members',
+  partnerships: 'Partnerships', outreach: 'Outreach', content: 'Content', team: 'Team Members', memberTasks: 'Member Tasks',
 };
 
 export default function Import() {

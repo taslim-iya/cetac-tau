@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import Notifications from './Notifications';
@@ -10,6 +10,7 @@ const nav = [
   { path: '/calendar', icon: Calendar, label: 'Calendar' },
   { path: '/team', icon: Users, label: 'Team' },
   { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
+  { path: '/member-tasks', icon: ClipboardList, label: 'Member Tasks' },
   { path: '/events', icon: Calendar, label: 'Events' },
   { path: '/partnerships', icon: Handshake, label: 'Partnerships' },
   { path: '/sponsors', icon: Award, label: 'Sponsor Pipeline' },
@@ -35,24 +36,24 @@ const mobileNav = [
 
 export default function Sidebar() {
   const loc = useLocation();
-  const { darkMode, toggleDarkMode } = useStore();
+  const { darkMode, toggleDarkMode, currentUser, logout } = useStore();
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="desktop-sidebar" style={{ width: 200, borderRight: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0, overflow: 'auto' }}>
-        <div style={{ padding: '14px 14px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 26, height: 26, borderRadius: 6, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 11, fontWeight: 800 }}>C</div>
+      <aside className="desktop-sidebar" style={{ width: 210, borderRight: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0, overflow: 'auto' }}>
+        <div style={{ padding: '16px 16px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 4, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 800, fontFamily: 'var(--serif)' }}>C</div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>CETAC</div>
-              <div style={{ fontSize: 9, color: 'var(--text-3)' }}>Cambridge ETA Club</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--serif)', lineHeight: 1.2 }}>CETAC</div>
+              <div style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--sans)' }}>Cambridge ETA Club</div>
             </div>
           </div>
           <Notifications />
         </div>
 
-        <nav style={{ flex: 1, padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <nav style={{ flex: 1, padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 1 }}>
           {nav.map(({ path, icon: Icon, label }) => {
             const active = path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path);
             return (
@@ -63,13 +64,21 @@ export default function Sidebar() {
           })}
         </nav>
 
-        <div style={{ borderTop: '1px solid var(--border)', padding: '6px' }}>
-          <button onClick={toggleDarkMode} className="nav-item" style={{ marginBottom: 2 }}>
-            {darkMode ? <Sun size={14} /> : <Moon size={14} />} {darkMode ? 'Light Mode' : 'Dark Mode'}
+        <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
+          <button onClick={toggleDarkMode} className="nav-item" style={{ marginBottom: 1 }}>
+            {darkMode ? <Sun size={14} /> : <Moon size={14} />} {darkMode ? 'Light' : 'Dark'}
           </button>
           <NavLink to="/settings" className={cn('nav-item', loc.pathname === '/settings' && 'nav-item-active')}>
             <Settings size={14} strokeWidth={1.5} /> Settings
           </NavLink>
+          <button onClick={logout} className="nav-item" style={{ color: 'var(--text-3)' }}>
+            <LogOut size={14} /> Sign Out
+          </button>
+          {currentUser && (
+            <div style={{ padding: '6px 14px', fontSize: 10, color: 'var(--text-3)' }}>
+              {currentUser.name} ({currentUser.role === 'super_admin' ? 'Admin' : 'Member'})
+            </div>
+          )}
         </div>
       </aside>
 

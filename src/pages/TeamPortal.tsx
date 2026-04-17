@@ -17,6 +17,7 @@ const MODULES = [
   { key: 'roles', label: 'Roles', desc: 'Role assignments' },
   { key: 'content', label: 'Content', desc: 'Content management' },
   { key: 'outreach', label: 'Outreach', desc: 'Email outreach tracking' },
+  { key: 'memberTasks', label: 'Member Tasks', desc: 'Daily/weekly/one-off tasks' },
   { key: 'templates', label: 'Templates', desc: 'Email templates' },
   { key: 'searchDay', label: 'Search Day', desc: 'Search Day command centre' },
   { key: 'chat', label: 'AI Chat', desc: 'AI assistant' },

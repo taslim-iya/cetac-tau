@@ -1,5 +1,8 @@
+import { useRef, useState } from 'react';
 import { useStore } from '../store';
 import DataTable from '../components/DataTable';
+import { Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const TYPE_OPTS = [
   { value: 'team', label: 'Team' }, { value: 'investor', label: 'Investor' },
@@ -22,13 +25,87 @@ const COLUMNS = [
 
 export default function CRM() {
   const { contacts, update, add, remove } = useStore();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importMsg, setImportMsg] = useState('');
+
+  const handleFile = async (file: File) => {
+    try {
+      let data: any[] = [];
+      let headers: string[] = [];
+
+      if (file.name.endsWith('.csv')) {
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim());
+        headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        data = lines.slice(1).map(line => {
+          const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
+          const row: Record<string, string> = {};
+          headers.forEach((h, i) => row[h] = vals[i] || '');
+          return row;
+        });
+      } else if (file.name.match(/\.xlsx?$/)) {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+        if (json.length > 0) {
+          headers = json[0].map(String);
+          data = json.slice(1).map(row => {
+            const obj: Record<string, string> = {};
+            headers.forEach((h, i) => obj[h] = String(row[i] || ''));
+            return obj;
+          });
+        }
+      } else {
+        setImportMsg('Unsupported file type. Use CSV or Excel.');
+        return;
+      }
+
+      let imported = 0;
+      data.forEach(row => {
+        const name = row[headers.find(h => h.toLowerCase().includes('name')) || ''] || '';
+        if (!name) return;
+        add('contacts', {
+          name,
+          email: row[headers.find(h => h.toLowerCase().includes('email')) || ''] || '',
+          phone: row[headers.find(h => h.toLowerCase().includes('phone')) || ''] || '',
+          linkedin: row[headers.find(h => h.toLowerCase().includes('linkedin')) || ''] || '',
+          type: 'prospect',
+          organisation: row[headers.find(h => h.toLowerCase().match(/organ|company|firm/)) || ''] || '',
+          role: row[headers.find(h => h.toLowerCase().match(/role|title|position/)) || ''] || '',
+          notes: row[headers.find(h => h.toLowerCase().includes('note')) || ''] || '',
+          tags: [],
+        });
+        imported++;
+      });
+      setImportMsg(`Imported ${imported} contacts from ${file.name}`);
+      setTimeout(() => setImportMsg(''), 5000);
+    } catch (err) {
+      setImportMsg(`Error: ${err}`);
+    }
+  };
 
   return (
     <div style={{ padding: '32px 40px' }}>
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>CRM</h1>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 2 }}>{contacts.length} contacts</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h1>CRM</h1>
+          <p>{contacts.length} contacts</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input type="file" ref={fileRef} style={{ display: 'none' }} accept=".csv,.xlsx,.xls" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+          <button onClick={() => fileRef.current?.click()} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: 'var(--bg)', color: 'var(--text-2)', fontFamily: 'var(--sans)' }}>
+            <Upload size={13} /> Import File
+          </button>
+        </div>
       </div>
+
+      {importMsg && (
+        <div style={{ padding: '8px 14px', marginBottom: 16, borderRadius: 4, background: importMsg.startsWith('Error') ? 'var(--red-light)' : 'var(--green-light)', color: importMsg.startsWith('Error') ? 'var(--red)' : 'var(--green)', fontSize: 12, fontWeight: 600 }}>
+          {importMsg}
+        </div>
+      )}
+
       <DataTable
         columns={COLUMNS}
         data={contacts}

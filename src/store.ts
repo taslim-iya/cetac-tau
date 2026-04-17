@@ -1,22 +1,27 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, Outreach, CalendarEvent, AppSettings } from './types';
+import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach } from './types';
 import { id } from './lib/utils';
 
 interface S {
   contacts: Contact[]; team: TeamMember[]; tasks: Task[]; events: CETACEvent[];
   partnerships: Partnership[]; content: ContentItem[]; outreach: Outreach[];
   calendar: CalendarEvent[]; settings: AppSettings;
+  users: CETACUser[]; currentUser: CETACUser | null;
+  memberTasks: MemberTask[];
   darkMode: boolean;
   toggleDarkMode: () => void;
-  // Generic CRUD
+  login: (email: string, password: string) => boolean;
+  logout: () => void;
   add: <T extends { id: string }>(key: string, item: Omit<T, 'id' | 'createdAt'>) => void;
   update: (key: string, itemId: string, updates: Record<string, any>) => void;
   remove: (key: string, itemId: string) => void;
   updateSettings: (s: Partial<AppSettings>) => void;
+  addMemberTask: (task: Omit<MemberTask, 'id' | 'createdAt'>) => void;
+  updateMemberTask: (taskId: string, updates: Partial<MemberTask>) => void;
+  removeMemberTask: (taskId: string) => void;
 }
 
-// Pre-loaded team
 const TEAM: TeamMember[] = [
   { id: id(), name: 'Taslim', role: 'President', responsibilities: 'Networking, Career Development & Sponsorships — leads external ecosystem, investor and sponsor relationships, alumni engagement, PPM mentoring. Newsletter Editor.', email: '', phone: '', linkedin: '', status: 'active', vertical: 'Executive', createdAt: new Date().toISOString() },
   { id: id(), name: 'Andres', role: 'VP Partnerships — External', responsibilities: 'Owns investor, accelerator, and business school relationships, sponsorship pipeline, and the ETA ecosystem database', email: '', phone: '', linkedin: '', status: 'active', vertical: 'Partnerships', createdAt: new Date().toISOString() },
@@ -36,7 +41,6 @@ const TEAM: TeamMember[] = [
   { id: id(), name: 'Jai', role: 'Potential Member (MBA)', responsibilities: '', email: '', phone: '', linkedin: '', status: 'potential', vertical: '', createdAt: new Date().toISOString() },
 ];
 
-// Pre-loaded 9-week events
 const EVENTS: CETACEvent[] = [
   { id: id(), name: 'Foundation Week — Internal Setup', description: 'Finalise team structure, begin rebrand, draft LinkedIn post, start alumni mapping, outreach to business schools', date: '', time: '', venue: '', week: 1, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Internal', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
   { id: id(), name: 'Spectra Search: Investor Perspective', description: 'Investor talk/fireside — how they evaluate searchers. Moderated Q&A.', date: '', time: '', venue: 'CJBS', week: 2, status: 'planned', speakers: ['Spectra Search'], sponsors: [], attendeeCount: 0, format: 'Talk + Q&A', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
@@ -49,7 +53,6 @@ const EVENTS: CETACEvent[] = [
   { id: id(), name: 'ETA Networking Social — Wrap-up', description: 'End-of-term social — alumni, members, LBS guests. Reflection + open networking.', date: '', time: '', venue: 'Cambridge', week: 9, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: 'Social', postEventNotes: '', checklist: [], createdAt: new Date().toISOString() },
 ];
 
-// Pre-loaded tasks
 const TASKS: Task[] = [
   { id: id(), title: 'Get ETA email address from Cecile', description: '', status: 'todo', priority: 'urgent', assignees: ['Isbah'], dueDate: '', week: 1, category: 'Admin', completedAt: '', createdAt: new Date().toISOString() },
   { id: id(), title: 'Message Gustavo (9T Capital) — invite to Search Day, request case studies', description: '', status: 'todo', priority: 'urgent', assignees: ['Taslim'], dueDate: '', week: 1, category: 'Partnerships', completedAt: '', createdAt: new Date().toISOString() },
@@ -99,20 +102,38 @@ const PARTNERSHIPS: Partnership[] = [
   { id: id(), name: 'debtadvisory.ai', type: 'advisor', contactPerson: 'Darren Coyne / Tom Greene', contactEmail: '', status: 'prospect', notes: 'Week 5 event. Acquisition finance.', lastContactDate: '', nextAction: 'Confirm event details', createdAt: new Date().toISOString() },
 ];
 
+const DEFAULT_USERS: CETACUser[] = [
+  { id: id(), email: 'admin@etacambridge.co.uk', name: 'Admin', password: 'cetac2026', role: 'super_admin', permissions: {} },
+];
+
 export const useStore = create<S>()(
   persist(
     (set, get) => ({
       contacts: [], team: TEAM, tasks: TASKS, events: EVENTS,
       partnerships: PARTNERSHIPS, content: [], outreach: [], calendar: [],
       settings: { openaiApiKey: '', clubEmail: '', notifyEmail: '' },
+      users: DEFAULT_USERS,
+      currentUser: null,
+      memberTasks: [],
       darkMode: false,
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
+
+      login: (email: string, password: string) => {
+        const user = get().users.find(u => u.email === email && u.password === password);
+        if (user) { set({ currentUser: user }); return true; }
+        return false;
+      },
+      logout: () => set({ currentUser: null }),
 
       add: (key, item) => set(s => ({ [key]: [{ ...item, id: id(), createdAt: new Date().toISOString() }, ...(s as any)[key]] })),
       update: (key, itemId, updates) => set(s => ({ [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) })),
       remove: (key, itemId) => set(s => ({ [key]: (s as any)[key].filter((i: any) => i.id !== itemId) })),
       updateSettings: (upd) => set(s => ({ settings: { ...s.settings, ...upd } })),
+
+      addMemberTask: (task) => set(s => ({ memberTasks: [{ ...task, id: id(), createdAt: new Date().toISOString() }, ...s.memberTasks] })),
+      updateMemberTask: (taskId, updates) => set(s => ({ memberTasks: s.memberTasks.map(t => t.id === taskId ? { ...t, ...updates } : t) })),
+      removeMemberTask: (taskId) => set(s => ({ memberTasks: s.memberTasks.filter(t => t.id !== taskId) })),
     }),
-    { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode }) }
+    { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks }) }
   )
 );

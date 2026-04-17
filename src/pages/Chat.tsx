@@ -1,20 +1,27 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, Upload, Paperclip } from 'lucide-react';
 import { useStore } from '../store';
 import { id } from '../lib/utils';
+import * as XLSX from 'xlsx';
 
 interface Message { id: string; role: 'user' | 'assistant'; content: string; timestamp: string; }
 
 export default function Chat() {
   const [messages, setMessages] = useState<Message[]>([
-    { id: '0', role: 'assistant', content: 'Hi! I\'m the CETAC AI assistant. I can help you:\n\n• **Add tasks** — "Add a task to contact LBS president this week"\n• **Add contacts** — "Add John Smith from Spectra Search as an investor"\n• **Add events** — "Create an event for Week 3 dinner"\n• **Add outreach** — "Track email to Aven Capital"\n• **Summarise progress** — "How are we doing on Week 1?"\n\nWhat would you like to do?', timestamp: new Date().toISOString() }
+    { id: '0', role: 'assistant', content: 'Hi! I\'m the CETAC AI assistant. I can:\n\n• **Add/modify data** — "Add a task", "Create a contact", "Update CRM"\n• **Answer questions** — "How many tasks are done?", "Who\'s on the team?"\n• **Parse uploaded files** — Drop a CSV/Excel/PDF to import data\n• **Manage the app** — "Add a team member", "Change task status"\n\nWhat would you like to do?', timestamp: new Date().toISOString() }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const store = useStore();
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+
+  const getStoreContext = () => {
+    const s = store;
+    return `Current CETAC data:\n- Team: ${s.team.length} members (${s.team.filter(t => t.status === 'active').length} active): ${s.team.map(t => `${t.name} (${t.role})`).join(', ')}\n- Tasks: ${s.tasks.length} total, ${s.tasks.filter(t => t.status === 'done').length} done, ${s.tasks.filter(t => t.status === 'todo').length} todo\n- Events: ${s.events.length}\n- Partnerships: ${s.partnerships.length}\n- Contacts: ${s.contacts.length}\n- Member Tasks: ${s.memberTasks.length}`;
+  };
 
   const parseAndExecute = (text: string): string => {
     const lower = text.toLowerCase();
@@ -24,8 +31,10 @@ export default function Chat() {
       const title = text.replace(/add\s+(a\s+)?task\s+(to\s+)?/i, '').trim();
       const weekMatch = lower.match(/week\s*(\d)/);
       const week = weekMatch ? Number(weekMatch[1]) : 1;
-      store.add('tasks', { title: title || 'New task', description: '', status: 'todo', priority: 'medium', assignees: [], dueDate: '', week, category: '', completedAt: '' });
-      return `✅ Added task: "${title || 'New task'}" to Week ${week}. You can edit it in the Tasks page.`;
+      const assigneeMatch = lower.match(/(?:assign|to)\s+(\w+)/i);
+      const assignees = assigneeMatch ? [assigneeMatch[1]] : [];
+      store.add('tasks', { title: title || 'New task', description: '', status: 'todo', priority: 'medium', assignees, dueDate: '', week, category: '', completedAt: '' });
+      return `✅ Added task: "${title || 'New task'}" to Week ${week}${assignees.length ? ` assigned to ${assignees.join(', ')}` : ''}`;
     }
 
     // Add contact
@@ -34,42 +43,161 @@ export default function Chat() {
       const nameMatch = text.match(/(?:add|contact)\s+(.+?)(?:\s+(?:from|as|at)\s|$)/i);
       const orgMatch = text.match(/(?:from|at)\s+(.+?)(?:\s+as\s|$)/i);
       store.add('contacts', { name: nameMatch?.[1] || '', email: '', phone: '', linkedin: '', type, organisation: orgMatch?.[1] || '', role: '', notes: '', tags: [] });
-      return `✅ Added ${type}: "${nameMatch?.[1] || 'New contact'}"${orgMatch?.[1] ? ` from ${orgMatch[1]}` : ''}. Fill in details in the CRM.`;
+      return `✅ Added ${type}: "${nameMatch?.[1] || 'New contact'}"${orgMatch?.[1] ? ` from ${orgMatch[1]}` : ''}`;
+    }
+
+    // Add team member
+    if (lower.includes('add') && (lower.includes('team') || lower.includes('member'))) {
+      const nameMatch = text.match(/(?:add|new)\s+(?:team\s+)?member\s+(.+?)(?:\s+as\s|$)/i);
+      const roleMatch = text.match(/as\s+(.+?)$/i);
+      store.add('team', { name: nameMatch?.[1] || 'New member', role: roleMatch?.[1] || 'Member', responsibilities: '', email: '', phone: '', linkedin: '', status: 'active', vertical: '' });
+      return `✅ Added team member: "${nameMatch?.[1] || 'New member'}" as ${roleMatch?.[1] || 'Member'}`;
     }
 
     // Add event
-    if (lower.includes('add') && lower.includes('event') || lower.includes('create') && lower.includes('event')) {
+    if ((lower.includes('add') || lower.includes('create')) && lower.includes('event')) {
       const weekMatch = lower.match(/week\s*(\d)/);
       const week = weekMatch ? Number(weekMatch[1]) : 1;
       const name = text.replace(/(?:add|create)\s+(an?\s+)?event\s+(?:for\s+)?/i, '').replace(/week\s*\d/i, '').trim();
-      store.add('events', { name: name || 'New event', description: '', date: '', time: '', venue: '', week, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: '', postEventNotes: '' });
-      return `✅ Created event: "${name || 'New event'}" in Week ${week}. Set date and venue in Events.`;
+      store.add('events', { name: name || 'New event', description: '', date: '', time: '', venue: '', week, status: 'planned', speakers: [], sponsors: [], attendeeCount: 0, format: '', postEventNotes: '', checklist: [] });
+      return `✅ Created event: "${name || 'New event'}" in Week ${week}`;
     }
 
-    // Add outreach
-    if (lower.includes('track') && lower.includes('email') || lower.includes('add') && lower.includes('outreach')) {
-      const toMatch = text.match(/(?:to|email)\s+(.+?)(?:\s+about\s|$)/i);
-      store.add('outreach', { contactName: toMatch?.[1] || '', contactEmail: '', subject: '', message: '', status: 'draft', sentDate: '', followUpDate: '', category: '', notes: '' });
-      return `✅ Tracking outreach to "${toMatch?.[1] || 'contact'}". Update status in Outreach.`;
+    // Add member task
+    if (lower.includes('assign') && (lower.includes('daily') || lower.includes('weekly') || lower.includes('one-off') || lower.includes('task to'))) {
+      const type = lower.includes('daily') ? 'daily' : lower.includes('weekly') ? 'weekly' : 'one-off';
+      const toMatch = lower.match(/(?:to|for)\s+(\w+)/i);
+      const titleMatch = text.match(/assign\s+(?:daily|weekly|one-off)?\s*(?:task)?\s*[":]\s*(.+?)(?:\s+to\s|\s+for\s|$)/i);
+      const assignee = toMatch?.[1] || '';
+      const member = store.team.find(m => m.name.toLowerCase() === assignee.toLowerCase());
+      if (member) {
+        store.addMemberTask({ title: titleMatch?.[1] || 'New task', description: '', assigneeId: member.id, assigneeName: member.name, type: type as any, status: 'pending', dueDate: '' });
+        return `✅ Assigned ${type} task to ${member.name}: "${titleMatch?.[1] || 'New task'}"`;
+      }
     }
 
-    // Progress summary
-    if (lower.includes('progress') || lower.includes('how') && lower.includes('doing') || lower.includes('summary') || lower.includes('status')) {
+    // Progress / status
+    if (lower.includes('progress') || (lower.includes('how') && lower.includes('doing')) || lower.includes('summary') || lower.includes('status')) {
       const weekMatch = lower.match(/week\s*(\d)/);
       if (weekMatch) {
         const w = Number(weekMatch[1]);
         const wTasks = store.tasks.filter(t => t.week === w);
         const done = wTasks.filter(t => t.status === 'done').length;
-        const inProg = wTasks.filter(t => t.status === 'in_progress').length;
         const event = store.events.find(e => e.week === w);
-        return `📊 **Week ${w} Progress**\n\n• Tasks: ${done}/${wTasks.length} done, ${inProg} in progress\n• Event: ${event ? `${event.name} (${event.status})` : 'None'}\n• Key tasks remaining:\n${wTasks.filter(t => t.status !== 'done').slice(0, 5).map(t => `  – ${t.title}`).join('\n') || '  None — all done!'}`;
+        return `📊 **Week ${w} Progress**\n\n• Tasks: ${done}/${wTasks.length} done\n• Event: ${event ? `${event.name} (${event.status})` : 'None'}\n• Remaining:\n${wTasks.filter(t => t.status !== 'done').slice(0, 5).map(t => `  - ${t.title}`).join('\n') || '  All done!'}`;
       }
       const total = store.tasks.length;
       const done = store.tasks.filter(t => t.status === 'done').length;
-      return `📊 **Overall Progress**\n\n• Tasks: ${done}/${total} completed (${total ? Math.round(done/total*100) : 0}%)\n• Team: ${store.team.filter(t => t.status === 'active').length} active members\n• Events: ${store.events.length} planned\n• Partnerships: ${store.partnerships.length} tracked\n• Contacts: ${store.contacts.length} in CRM\n• Content: ${store.content.length} items`;
+      return `📊 **Overall Progress**\n\n• Tasks: ${done}/${total} (${total ? Math.round(done/total*100) : 0}%)\n• Team: ${store.team.filter(t => t.status === 'active').length} active\n• Events: ${store.events.length} planned\n• Partnerships: ${store.partnerships.length}\n• CRM Contacts: ${store.contacts.length}\n• Member Tasks: ${store.memberTasks.length}`;
     }
 
-    return `I understood: "${text}"\n\nTry commands like:\n• "Add a task to [description]"\n• "Add [name] from [org] as investor"\n• "Create an event for Week 3"\n• "Track email to [name]"\n• "How are we doing on Week 1?"`;
+    // Team info
+    if (lower.includes('who') && (lower.includes('team') || lower.includes('member'))) {
+      return `👥 **Team Members**\n\n${store.team.filter(t => t.status === 'active').map(t => `• **${t.name}** — ${t.role}${t.responsibilities ? ` (${t.responsibilities.slice(0, 60)}...)` : ''}`).join('\n')}`;
+    }
+
+    // List tasks for member
+    if (lower.match(/what.*tasks?.*(does|has|for)\s+(\w+)/i)) {
+      const nameMatch = lower.match(/(?:does|has|for)\s+(\w+)/i);
+      if (nameMatch) {
+        const name = nameMatch[1];
+        const tasks = store.tasks.filter(t => t.assignees.some(a => a.toLowerCase() === name));
+        const mTasks = store.memberTasks.filter(t => t.assigneeName.toLowerCase() === name);
+        return `📋 **Tasks for ${name}**\n\nPlan Tasks (${tasks.length}):\n${tasks.map(t => `• [${t.status}] ${t.title} (Week ${t.week})`).join('\n') || '  None'}\n\nMember Tasks (${mTasks.length}):\n${mTasks.map(t => `• [${t.status}] ${t.title} (${t.type})`).join('\n') || '  None'}`;
+      }
+    }
+
+    return `I understood: "${text}"\n\nTry:\n• "Add a task to [description] week 2"\n• "Add contact [name] from [org] as investor"\n• "Add team member [name] as [role]"\n• "Assign daily task: [title] to [name]"\n• "How are we doing?"\n• "What tasks does Taslim have?"\n• Upload a CSV/Excel file to import data`;
+  };
+
+  const handleFile = async (file: File) => {
+    const userMsg: Message = { id: id(), role: 'user', content: `📎 Uploaded: ${file.name}`, timestamp: new Date().toISOString() };
+    setMessages(m => [...m, userMsg]);
+    setLoading(true);
+
+    try {
+      let data: any[] = [];
+      let headers: string[] = [];
+
+      if (file.name.endsWith('.csv')) {
+        const text = await file.text();
+        const lines = text.split('\n').filter(l => l.trim());
+        headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        data = lines.slice(1).map(line => {
+          const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
+          const row: Record<string, string> = {};
+          headers.forEach((h, i) => row[h] = vals[i] || '');
+          return row;
+        });
+      } else if (file.name.match(/\.xlsx?$/)) {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+        if (json.length > 0) {
+          headers = json[0].map(String);
+          data = json.slice(1).map(row => {
+            const obj: Record<string, string> = {};
+            headers.forEach((h, i) => obj[h] = String(row[i] || ''));
+            return obj;
+          });
+        }
+      } else {
+        const text = await file.text();
+        setMessages(m => [...m, { id: id(), role: 'assistant', content: `📄 File contents (${text.length} chars):\n\n\`\`\`\n${text.slice(0, 1000)}\n\`\`\`\n\nTell me what to do with this data.`, timestamp: new Date().toISOString() }]);
+        setLoading(false);
+        return;
+      }
+
+      // Auto-detect: CRM contacts vs team roles vs tasks
+      const headerLower = headers.map(h => h.toLowerCase());
+      let imported = 0;
+
+      if (headerLower.some(h => h.includes('email') || h.includes('phone') || h.includes('organisation') || h.includes('organization') || h.includes('company'))) {
+        // CRM contacts
+        data.forEach(row => {
+          const name = row[headers.find(h => h.toLowerCase().includes('name')) || ''] || '';
+          if (!name) return;
+          store.add('contacts', {
+            name,
+            email: row[headers.find(h => h.toLowerCase().includes('email')) || ''] || '',
+            phone: row[headers.find(h => h.toLowerCase().includes('phone')) || ''] || '',
+            linkedin: row[headers.find(h => h.toLowerCase().includes('linkedin')) || ''] || '',
+            type: 'prospect',
+            organisation: row[headers.find(h => h.toLowerCase().match(/organ|company|firm/)) || ''] || '',
+            role: row[headers.find(h => h.toLowerCase().includes('role') || h.toLowerCase().includes('title')) || ''] || '',
+            notes: row[headers.find(h => h.toLowerCase().includes('note')) || ''] || '',
+            tags: [],
+          });
+          imported++;
+        });
+        setMessages(m => [...m, { id: id(), role: 'assistant', content: `✅ Imported **${imported} contacts** into CRM from ${file.name}.\n\nHeaders detected: ${headers.join(', ')}`, timestamp: new Date().toISOString() }]);
+      } else if (headerLower.some(h => h.includes('role') || h.includes('responsibility') || h.includes('vertical'))) {
+        // Team roles update
+        data.forEach(row => {
+          const name = row[headers.find(h => h.toLowerCase().includes('name')) || ''] || '';
+          if (!name) return;
+          const existing = store.team.find(m => m.name.toLowerCase() === name.toLowerCase());
+          if (existing) {
+            const updates: Record<string, any> = {};
+            const roleCol = headers.find(h => h.toLowerCase().includes('role'));
+            const respCol = headers.find(h => h.toLowerCase().match(/responsib|duties/));
+            const vertCol = headers.find(h => h.toLowerCase().includes('vertical'));
+            if (roleCol && row[roleCol]) updates.role = row[roleCol];
+            if (respCol && row[respCol]) updates.responsibilities = row[respCol];
+            if (vertCol && row[vertCol]) updates.vertical = row[vertCol];
+            store.update('team', existing.id, updates);
+            imported++;
+          }
+        });
+        setMessages(m => [...m, { id: id(), role: 'assistant', content: `✅ Updated **${imported} team members** from ${file.name}.\n\nHeaders: ${headers.join(', ')}`, timestamp: new Date().toISOString() }]);
+      } else {
+        setMessages(m => [...m, { id: id(), role: 'assistant', content: `📊 Parsed **${data.length} rows** from ${file.name}.\n\nHeaders: ${headers.join(', ')}\n\nI could not auto-detect the data type. Tell me: should I import these as **contacts**, **tasks**, or **team updates**?`, timestamp: new Date().toISOString() }]);
+      }
+    } catch (err) {
+      setMessages(m => [...m, { id: id(), role: 'assistant', content: `❌ Error parsing file: ${err}`, timestamp: new Date().toISOString() }]);
+    }
+    setLoading(false);
   };
 
   const send = () => {
@@ -78,25 +206,24 @@ export default function Chat() {
     setMessages(m => [...m, userMsg]);
     setInput('');
     setLoading(true);
-
     setTimeout(() => {
       const response = parseAndExecute(userMsg.content);
       setMessages(m => [...m, { id: id(), role: 'assistant', content: response, timestamp: new Date().toISOString() }]);
       setLoading(false);
-    }, 400);
+    }, 300);
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{ padding: '20px 40px', borderBottom: '1px solid var(--border)' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700 }}>AI Chat</h1>
-        <p style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 2 }}>Natural language interface — add data, get summaries</p>
+      <div style={{ padding: '20px 40px', borderBottom: '2px solid var(--accent)' }}>
+        <h1 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 700 }}>AI Chat</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 2 }}>Natural language interface — manage data, upload files, get insights</p>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '20px 40px' }}>
         {messages.map(m => (
           <div key={m.id} style={{ display: 'flex', gap: 10, marginBottom: 16, maxWidth: 700 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: m.role === 'assistant' ? 'var(--accent-light)' : 'var(--bg-3)' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: m.role === 'assistant' ? 'var(--accent-light)' : 'var(--bg-3)' }}>
               {m.role === 'assistant' ? <Bot size={14} color="var(--accent)" /> : <User size={14} color="var(--text-2)" />}
             </div>
             <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text)', whiteSpace: 'pre-wrap' }}
@@ -105,10 +232,10 @@ export default function Chat() {
         ))}
         {loading && (
           <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-light)' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-light)' }}>
               <Bot size={14} color="var(--accent)" />
             </div>
-            <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Thinking...</div>
+            <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Processing...</div>
           </div>
         )}
         <div ref={endRef} />
@@ -116,11 +243,14 @@ export default function Chat() {
 
       <div style={{ padding: '16px 40px', borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
         <div style={{ display: 'flex', gap: 8, maxWidth: 700 }}>
+          <input type="file" ref={fileRef} style={{ display: 'none' }} accept=".csv,.xlsx,.xls,.pdf,.txt" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }} />
+          <button onClick={() => fileRef.current?.click()} style={{ padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 4, background: 'var(--bg)', cursor: 'pointer', display: 'flex', alignItems: 'center' }} title="Upload file">
+            <Paperclip size={14} color="var(--text-3)" />
+          </button>
           <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
             placeholder="Type a command or question..."
-            style={{ flex: 1, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
-          <button onClick={send} disabled={!input.trim() || loading}
-            style={{ padding: '10px 16px', border: 'none', borderRadius: 8, background: input.trim() ? 'var(--accent)' : 'var(--bg-3)', color: input.trim() ? 'white' : 'var(--text-3)', cursor: input.trim() ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
+            style={{ flex: 1, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13, outline: 'none', fontFamily: 'var(--sans)', background: 'var(--bg)', color: 'var(--text)' }} />
+          <button onClick={send} disabled={!input.trim() || loading} className="btn-primary" style={{ opacity: input.trim() ? 1 : 0.5 }}>
             <Send size={14} /> Send
           </button>
         </div>

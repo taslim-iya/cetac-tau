@@ -10,6 +10,7 @@ const ENTITIES = [
   { key: 'contacts', label: 'CRM Contacts' },
   { key: 'content', label: 'Content' },
   { key: 'outreach', label: 'Outreach' },
+  { key: 'memberTasks', label: 'Member Tasks' },
 ];
 
 export default function Export() {

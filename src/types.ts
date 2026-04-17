@@ -4,7 +4,31 @@ export type EventStatus = 'planned' | 'confirmed' | 'completed' | 'cancelled';
 export type ContactType = 'team' | 'investor' | 'advisor' | 'alumni' | 'partner' | 'sponsor' | 'speaker' | 'prospect';
 export type PartnershipStatus = 'prospect' | 'contacted' | 'in_discussion' | 'agreed' | 'active';
 export type ContentStatus = 'idea' | 'in_progress' | 'review' | 'published';
-export type OutreachStatus = 'draft' | 'sent' | 'replied' | 'meeting_booked' | 'no_response';
+
+export type PermissionLevel = 'edit' | 'view';
+export type UserRole = 'super_admin' | 'team_member';
+
+export interface CETACUser {
+  id: string;
+  email: string;
+  name: string;
+  password: string;
+  role: UserRole;
+  permissions: Record<string, PermissionLevel>;
+  teamMemberId?: string;
+}
+
+export interface MemberTask {
+  id: string;
+  title: string;
+  description: string;
+  assigneeId: string;
+  assigneeName: string;
+  type: 'daily' | 'weekly' | 'one-off';
+  status: 'pending' | 'in-progress' | 'done';
+  dueDate: string;
+  createdAt: string;
+}
 
 export interface Contact {
   id: string;
@@ -90,6 +114,8 @@ export interface ContentItem {
   notes: string;
   createdAt: string;
 }
+
+export type OutreachStatus = 'draft' | 'sent' | 'replied' | 'meeting_booked' | 'no_response';
 
 export interface Outreach {
   id: string;
