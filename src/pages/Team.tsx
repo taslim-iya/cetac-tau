@@ -1,15 +1,19 @@
-import { useState } from 'react';
-import { Plus, Trash2, Users } from 'lucide-react';
+import { Plus, Trash2, GripVertical } from 'lucide-react';
 import EditableCell from '../components/EditableCell';
 import { useStore } from '../store';
-import { id } from '../lib/utils';
+import { useRowDrag } from '../lib/useRowDrag';
 
 const STATUS_OPTS = [
   { value: 'active', label: 'Active' }, { value: 'potential', label: 'Potential' }, { value: 'new', label: 'New' },
 ];
 
 export default function Team() {
-  const { team, update, add, remove } = useStore();
+  const { team, update, add, remove, reorder } = useStore();
+
+  const { handleProps, rowProps } = useRowDrag(
+    team.map(t => t.id),
+    (ids) => reorder('team', ids)
+  );
 
   const addMember = () => {
     add('team', { name: '', role: '', responsibilities: '', email: '', phone: '', linkedin: '', status: 'new', vertical: '' });
@@ -19,30 +23,36 @@ export default function Team() {
     <div style={{ padding: '32px 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700 }}>Team</h1>
-          <p style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 2 }}>{team.length} members — edit any cell directly</p>
+          <h1 style={{ fontSize: 24, fontWeight: 700 }}>Team</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 2 }}>{team.length} members · edit any cell directly · drag to reorder</p>
         </div>
-        <button onClick={addMember} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: 'none', borderRadius: 6, background: 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+        <button onClick={addMember} className="btn btn-primary">
           <Plus size={14} /> Add Member
         </button>
       </div>
 
-      <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'auto' }}>
+      <div className="card" style={{ overflow: 'auto' }}>
         <table className="data-table">
           <thead>
             <tr>
+              <th style={{ width: 22 }}></th>
               <th style={{ width: 140 }}>Name</th>
               <th style={{ width: 180 }}>Role</th>
               <th>Responsibilities</th>
-              <th style={{ width: 100 }}>Status</th>
-              <th style={{ width: 140 }}>Email</th>
+              <th style={{ width: 110 }}>Status</th>
+              <th style={{ width: 150 }}>Email</th>
               <th style={{ width: 120 }}>Vertical</th>
               <th style={{ width: 36 }}></th>
             </tr>
           </thead>
           <tbody>
             {team.map(m => (
-              <tr key={m.id}>
+              <tr key={m.id} {...rowProps(m.id)}>
+                <td>
+                  <span className="drag-handle" {...handleProps(m.id)} title="Drag to reorder">
+                    <GripVertical size={13} />
+                  </span>
+                </td>
                 <td><EditableCell value={m.name} onChange={v => update('team', m.id, { name: v })} placeholder="Name" /></td>
                 <td><EditableCell value={m.role} onChange={v => update('team', m.id, { role: v })} placeholder="Role" /></td>
                 <td><EditableCell value={m.responsibilities} onChange={v => update('team', m.id, { responsibilities: v })} placeholder="Responsibilities" /></td>

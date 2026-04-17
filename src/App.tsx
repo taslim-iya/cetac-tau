@@ -20,6 +20,7 @@ import Import from './pages/Import';
 import Export from './pages/Export';
 import TeamPortal from './pages/TeamPortal';
 import Settings from './pages/Settings';
+import CommandPalette from './components/CommandPalette';
 import { useStore } from './store';
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
+        <CommandPalette />
       </div>
     </BrowserRouter>
   );

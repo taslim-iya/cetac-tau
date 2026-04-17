@@ -13,6 +13,8 @@ interface S {
   add: <T extends { id: string }>(key: string, item: Omit<T, 'id' | 'createdAt'>) => void;
   update: (key: string, itemId: string, updates: Record<string, any>) => void;
   remove: (key: string, itemId: string) => void;
+  removeMany: (key: string, ids: string[]) => void;
+  reorder: (key: string, orderedIds: string[]) => void;
   updateSettings: (s: Partial<AppSettings>) => void;
 }
 
@@ -111,6 +113,17 @@ export const useStore = create<S>()(
       add: (key, item) => set(s => ({ [key]: [{ ...item, id: id(), createdAt: new Date().toISOString() }, ...(s as any)[key]] })),
       update: (key, itemId, updates) => set(s => ({ [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) })),
       remove: (key, itemId) => set(s => ({ [key]: (s as any)[key].filter((i: any) => i.id !== itemId) })),
+      removeMany: (key, ids) => set(s => {
+        const set = new Set(ids);
+        return { [key]: (s as any)[key].filter((i: any) => !set.has(i.id)) };
+      }),
+      reorder: (key, orderedIds) => set(s => {
+        const arr = (s as any)[key] as any[];
+        const map = new Map(arr.map((i: any) => [i.id, i]));
+        const ordered = orderedIds.map(id => map.get(id)).filter(Boolean);
+        const missing = arr.filter((i: any) => !orderedIds.includes(i.id));
+        return { [key]: [...ordered, ...missing] };
+      }),
       updateSettings: (upd) => set(s => ({ settings: { ...s.settings, ...upd } })),
     }),
     { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode }) }
