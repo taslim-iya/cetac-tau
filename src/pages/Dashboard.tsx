@@ -42,10 +42,10 @@ export default function Dashboard() {
   const maxTasks = Math.max(...weekData.map(w => w.total), 1);
 
   return (
-    <div style={{ padding: '36px 44px', maxWidth: 1180, margin: '0 auto' }}>
+    <div className="page-content" style={{ padding: '36px 44px', maxWidth: 1180, margin: '0 auto' }}>
       {/* Hero */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 28 }}>
-        <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 24, marginBottom: 28, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0, flex: '1 1 320px' }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 10px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent-pressed)', fontSize: 11, fontWeight: 600, marginBottom: 10, border: '1px solid var(--accent-ring)' }}>
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
             9-Week Term · {pctDone}% complete
@@ -79,7 +79,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div className="dash-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr)', gap: 16, marginBottom: 16 }}>
         {/* Burn-down chart */}
         <div className="card" style={{ padding: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
