@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, Search, SlidersHorizontal, X, Trash2 } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Search, SlidersHorizontal, X, Trash2, Plus } from 'lucide-react';
 import EditableCell from './EditableCell';
 
 interface Column {
@@ -120,6 +120,11 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
           )}
         </div>
 
+        {onAdd && (
+          <button onClick={onAdd} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', border: 'none', borderRadius: 6, background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <Plus size={13} /> {addLabel || 'Add'}
+          </button>
+        )}
         <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>{filtered.length} of {data.length}</div>
       </div>
 
