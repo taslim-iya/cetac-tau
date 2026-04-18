@@ -21,6 +21,7 @@ import TeamPortal from './pages/TeamPortal';
 import Outreach from './pages/Outreach';
 import Settings from './pages/Settings';
 import MemberTasks from './pages/MemberTasks';
+import KPITracker from './pages/KPITracker';
 import Login from './pages/Login';
 import { useStore } from './store';
 
@@ -59,6 +60,7 @@ export default function App() {
             <Route path="/export" element={<Export />} />
             <Route path="/team-portal" element={<TeamPortal />} />
             <Route path="/member-tasks" element={<MemberTasks />} />
+            <Route path="/kpi" element={<KPITracker />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>

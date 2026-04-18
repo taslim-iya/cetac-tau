@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach } from './types';
+import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach, Vertical, KPI } from './types';
 import { id } from './lib/utils';
 import { loadRemoteState, saveRemoteState, mergeState } from './lib/sync';
 
@@ -10,6 +10,8 @@ interface S {
   calendar: CalendarEvent[]; settings: AppSettings;
   users: CETACUser[]; currentUser: CETACUser | null;
   memberTasks: MemberTask[];
+  roles: string[];
+  verticals: Vertical[];
   darkMode: boolean;
   toggleDarkMode: () => void;
   login: (email: string, password: string) => boolean;
@@ -23,6 +25,11 @@ interface S {
   removeMemberTask: (taskId: string) => void;
   addUser: (user: Omit<CETACUser, 'id'>) => void;
   removeUser: (userId: string) => void;
+  addRole: (role: string) => void;
+  removeRole: (role: string) => void;
+  addVertical: (v: Omit<Vertical, 'id' | 'createdAt'>) => void;
+  updateVertical: (vId: string, updates: Partial<Vertical>) => void;
+  removeVertical: (vId: string) => void;
 }
 
 const TEAM: TeamMember[] = [
@@ -142,6 +149,40 @@ const DEFAULT_USERS: CETACUser[] = [
   })),
 ];
 
+const DEFAULT_ROLES = ['President', 'VP Partnerships — External', 'VP Communications & Sponsorship', 'VP Operations', 'VP Administration & Events', 'VP Community', 'Member', 'Potential Member'];
+
+const DEFAULT_VERTICALS: Vertical[] = [
+  { id: id(), name: 'Marketing', description: 'Brand, social media, LinkedIn, content', leadId: '', kpis: [
+    { id: id(), name: 'LinkedIn Followers', target: 500, current: 0, unit: 'followers' },
+    { id: id(), name: 'Posts Published', target: 20, current: 0, unit: 'posts' },
+    { id: id(), name: 'Newsletter Subscribers', target: 200, current: 0, unit: 'subscribers' },
+  ], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Events', description: 'Speaker events, workshops, Search Day', leadId: '', kpis: [
+    { id: id(), name: 'Events Hosted', target: 9, current: 0, unit: 'events' },
+    { id: id(), name: 'Total Attendees', target: 200, current: 0, unit: 'people' },
+    { id: id(), name: 'Speaker Satisfaction', target: 90, current: 0, unit: '%' },
+  ], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Partnerships', description: 'Business schools, investors, sponsors', leadId: '', kpis: [
+    { id: id(), name: 'Active Partnerships', target: 10, current: 0, unit: 'partnerships' },
+    { id: id(), name: 'MOUs Signed', target: 3, current: 0, unit: 'MOUs' },
+    { id: id(), name: 'Sponsor Revenue', target: 5000, current: 0, unit: '£' },
+  ], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Membership', description: 'Recruitment, engagement, retention', leadId: '', kpis: [
+    { id: id(), name: 'Active Members', target: 30, current: 16, unit: 'members' },
+    { id: id(), name: 'WhatsApp Group Size', target: 50, current: 0, unit: 'members' },
+    { id: id(), name: 'Member Retention', target: 90, current: 0, unit: '%' },
+  ], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Content', description: 'Case studies, playbooks, newsletters', leadId: '', kpis: [
+    { id: id(), name: 'Case Studies Published', target: 4, current: 0, unit: 'articles' },
+    { id: id(), name: 'Playbook Progress', target: 100, current: 0, unit: '%' },
+  ], createdAt: new Date().toISOString() },
+  { id: id(), name: 'Outreach', description: 'Alumni, investor, school outreach', leadId: '', kpis: [
+    { id: id(), name: 'Outreach Emails Sent', target: 100, current: 0, unit: 'emails' },
+    { id: id(), name: 'Response Rate', target: 30, current: 0, unit: '%' },
+    { id: id(), name: 'Meetings Booked', target: 15, current: 0, unit: 'meetings' },
+  ], createdAt: new Date().toISOString() },
+];
+
 export const useStore = create<S>()(
   persist(
     (set, get) => ({
@@ -151,6 +192,8 @@ export const useStore = create<S>()(
       users: DEFAULT_USERS,
       currentUser: null,
       memberTasks: [],
+      roles: DEFAULT_ROLES,
+      verticals: DEFAULT_VERTICALS,
       darkMode: false,
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
 
@@ -207,10 +250,15 @@ export const useStore = create<S>()(
       removeMemberTask: (taskId) => set(s => ({ memberTasks: s.memberTasks.filter(t => t.id !== taskId) })),
       addUser: (user) => set(s => ({ users: [...s.users, { ...user, id: id() }] })),
       removeUser: (userId) => set(s => ({ users: s.users.filter(u => u.id !== userId) })),
+      addRole: (role) => set(s => s.roles.includes(role) ? {} : { roles: [...s.roles, role] }),
+      removeRole: (role) => set(s => ({ roles: s.roles.filter(r => r !== role) })),
+      addVertical: (v) => set(s => ({ verticals: [...s.verticals, { ...v, id: id(), createdAt: new Date().toISOString() }] })),
+      updateVertical: (vId, updates) => set(s => ({ verticals: s.verticals.map(v => v.id === vId ? { ...v, ...updates } : v) })),
+      removeVertical: (vId) => set(s => ({ verticals: s.verticals.filter(v => v.id !== vId) })),
     }),
     {
       name: 'cetac-store',
-      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks }),
+      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals }),
       onRehydrate: () => {
         // After localStorage rehydration, fetch remote state and merge
         setTimeout(async () => {
@@ -230,6 +278,6 @@ export const useStore = create<S>()(
 
 // Subscribe to changes and sync to remote (debounced)
 useStore.subscribe((state) => {
-  const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks } = state;
-  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks });
+  const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals } = state;
+  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals });
 });

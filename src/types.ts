@@ -144,6 +144,23 @@ export interface CalendarEvent {
   linkedEventId: string;
 }
 
+export interface Vertical {
+  id: string;
+  name: string;
+  description: string;
+  leadId: string;
+  kpis: KPI[];
+  createdAt: string;
+}
+
+export interface KPI {
+  id: string;
+  name: string;
+  target: number;
+  current: number;
+  unit: string;
+}
+
 export interface AppSettings {
   openaiApiKey: string;
   clubEmail: string;

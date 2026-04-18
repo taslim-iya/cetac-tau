@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut, BarChart3 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import Notifications from './Notifications';
@@ -11,6 +11,7 @@ const nav = [
   { path: '/team', icon: Users, label: 'Team' },
   { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { path: '/member-tasks', icon: ClipboardList, label: 'Member Tasks' },
+  { path: '/kpi', icon: BarChart3, label: 'KPI Tracker' },
   { path: '/events', icon: Calendar, label: 'Events' },
   { path: '/partnerships', icon: Handshake, label: 'Partnerships' },
   { path: '/sponsors', icon: Award, label: 'Sponsors' },
