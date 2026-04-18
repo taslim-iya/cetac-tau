@@ -16,7 +16,9 @@ module.exports = async function handler(req, res) {
 
   if (req.method === 'GET') {
     try {
-      const r = await fetch(SB_URL + '/storage/v1/object/public/' + BUCKET + '/' + FILE);
+      const r = await fetch(SB_URL + '/storage/v1/object/' + BUCKET + '/' + FILE, {
+        headers: headers,
+      });
       if (!r.ok) return res.json({ state: null });
       const state = await r.json();
       return res.json({ state });
