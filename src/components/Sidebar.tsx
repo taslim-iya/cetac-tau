@@ -2,6 +2,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut, BarChart3 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
+import { getUserModules, ROUTE_MODULES } from '../lib/permissions';
+import { useMemo } from 'react';
 import Notifications from './Notifications';
 
 const nav = [
@@ -37,7 +39,28 @@ const mobileNav = [
 
 export default function Sidebar() {
   const loc = useLocation();
-  const { darkMode, toggleDarkMode, currentUser, logout } = useStore();
+  const { darkMode, toggleDarkMode, currentUser, logout, team } = useStore();
+
+  const allowedModules = useMemo(() => {
+    if (!currentUser) return [];
+    return getUserModules(currentUser, team);
+  }, [currentUser, team]);
+
+  const filteredNav = useMemo(() => {
+    return nav.filter(item => {
+      const moduleKey = ROUTE_MODULES[item.path];
+      if (!moduleKey) return true;
+      return allowedModules.includes(moduleKey);
+    });
+  }, [allowedModules]);
+
+  const filteredMobileNav = useMemo(() => {
+    return mobileNav.filter(item => {
+      const moduleKey = ROUTE_MODULES[item.path];
+      if (!moduleKey) return true;
+      return allowedModules.includes(moduleKey);
+    });
+  }, [allowedModules]);
 
   return (
     <>
@@ -55,7 +78,7 @@ export default function Sidebar() {
         </div>
 
         <nav style={{ flex: 1, padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
-          {nav.map(({ path, icon: Icon, label }) => {
+          {filteredNav.map(({ path, icon: Icon, label }) => {
             const active = path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path);
             return (
               <NavLink key={path} to={path} className={cn('nav-item', active && 'nav-item-active')}>
@@ -69,15 +92,17 @@ export default function Sidebar() {
           <button onClick={toggleDarkMode} className="nav-item">
             {darkMode ? <Sun size={14} /> : <Moon size={14} />} {darkMode ? 'Light Mode' : 'Dark Mode'}
           </button>
-          <NavLink to="/settings" className={cn('nav-item', loc.pathname === '/settings' && 'nav-item-active')}>
-            <Settings size={14} strokeWidth={1.5} /> Settings
-          </NavLink>
+          {allowedModules.includes('settings') && (
+            <NavLink to="/settings" className={cn('nav-item', loc.pathname === '/settings' && 'nav-item-active')}>
+              <Settings size={14} strokeWidth={1.5} /> Settings
+            </NavLink>
+          )}
           <button onClick={logout} className="nav-item">
             <LogOut size={14} /> Sign Out
           </button>
           {currentUser && (
             <div style={{ padding: '8px 16px', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {currentUser.name}
+              {currentUser.name} · {currentUser.role === 'super_admin' ? 'Admin' : 'Member'}
             </div>
           )}
         </div>
@@ -85,7 +110,7 @@ export default function Sidebar() {
 
       {/* Mobile bottom nav */}
       <nav className="mobile-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg)', borderTop: '1px solid var(--border)', zIndex: 100, justifyContent: 'space-around', padding: '8px 0 max(8px, env(safe-area-inset-bottom))' }}>
-        {mobileNav.map(({ path, icon: Icon, label }) => {
+        {filteredMobileNav.map(({ path, icon: Icon, label }) => {
           const active = path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path);
           return (
             <NavLink key={path} to={path} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none', padding: '4px 12px' }}>
