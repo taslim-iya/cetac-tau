@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach, Vertical, KPI } from './types';
 import { id } from './lib/utils';
 import { loadRemoteState, saveRemoteState, mergeState } from './lib/sync';
+import type { RolePlaybook, BSPartner } from './data/playbook-data';
+import { DEFAULT_PLAYBOOKS, DEFAULT_BS_PARTNERS } from './data/playbook-data';
 
 interface S {
   contacts: Contact[]; team: TeamMember[]; tasks: Task[]; events: CETACEvent[];
@@ -30,6 +32,10 @@ interface S {
   addVertical: (v: Omit<Vertical, 'id' | 'createdAt'>) => void;
   updateVertical: (vId: string, updates: Partial<Vertical>) => void;
   removeVertical: (vId: string) => void;
+  playbooks: RolePlaybook[];
+  bsPartners: BSPartner[];
+  updatePlaybook: (playbookId: string, updates: Partial<RolePlaybook>) => void;
+  updateBSPartner: (partnerId: string, updates: Partial<BSPartner>) => void;
 }
 
 const TEAM: TeamMember[] = [
@@ -194,6 +200,8 @@ export const useStore = create<S>()(
       memberTasks: [],
       roles: DEFAULT_ROLES,
       verticals: DEFAULT_VERTICALS,
+      playbooks: DEFAULT_PLAYBOOKS,
+      bsPartners: DEFAULT_BS_PARTNERS,
       darkMode: false,
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
 
@@ -255,10 +263,12 @@ export const useStore = create<S>()(
       addVertical: (v) => set(s => ({ verticals: [...s.verticals, { ...v, id: id(), createdAt: new Date().toISOString() }] })),
       updateVertical: (vId, updates) => set(s => ({ verticals: s.verticals.map(v => v.id === vId ? { ...v, ...updates } : v) })),
       removeVertical: (vId) => set(s => ({ verticals: s.verticals.filter(v => v.id !== vId) })),
+      updatePlaybook: (playbookId, updates) => set(s => ({ playbooks: s.playbooks.map(p => p.id === playbookId ? { ...p, ...updates } : p) })),
+      updateBSPartner: (partnerId, updates) => set(s => ({ bsPartners: s.bsPartners.map(p => p.id === partnerId ? { ...p, ...updates } : p) })),
     }),
     {
       name: 'cetac-store',
-      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals }),
+      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals, playbooks: s.playbooks, bsPartners: s.bsPartners }),
       onRehydrate: () => {
         // After localStorage rehydration, fetch remote state and merge
         setTimeout(async () => {

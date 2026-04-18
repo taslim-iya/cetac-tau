@@ -21,6 +21,7 @@ export const MODULE_ROUTES: Record<string, string> = {
   settings: '/settings',
   teamPortal: '/team-portal',
   team: '/team',
+  playbook: '/playbook',
 };
 
 // Reverse: route path → module key
@@ -31,12 +32,12 @@ export const ROUTE_MODULES: Record<string, string> = Object.fromEntries(
 // Role → allowed module keys
 export const ROLE_PRESETS: Record<string, string[]> = {
   'President': Object.keys(MODULE_ROUTES),
-  'VP Partnerships — External': ['dashboard', 'plan', 'calendar', 'partnerships', 'sponsors', 'crm', 'outreach', 'templates', 'searchDay', 'export', 'team', 'kpi'],
-  'VP Communications & Sponsorship': ['dashboard', 'plan', 'calendar', 'content', 'outreach', 'templates', 'crm', 'sponsors', 'export', 'team', 'kpi'],
-  'VP Operations': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'roles', 'teamPortal', 'export', 'import', 'team', 'kpi', 'memberTasks'],
-  'VP Administration & Events': ['dashboard', 'plan', 'calendar', 'events', 'searchDay', 'tasks', 'export', 'team', 'kpi'],
-  'VP Community': ['dashboard', 'plan', 'calendar', 'crm', 'content', 'outreach', 'templates', 'team', 'kpi'],
-  'Member': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'chat', 'memberTasks'],
+  'VP Partnerships — External': ['dashboard', 'plan', 'calendar', 'partnerships', 'sponsors', 'crm', 'outreach', 'templates', 'searchDay', 'export', 'team', 'kpi', 'playbook'],
+  'VP Communications & Sponsorship': ['dashboard', 'plan', 'calendar', 'content', 'outreach', 'templates', 'crm', 'sponsors', 'export', 'team', 'kpi', 'playbook'],
+  'VP Operations': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'roles', 'teamPortal', 'export', 'import', 'team', 'kpi', 'memberTasks', 'playbook'],
+  'VP Administration & Events': ['dashboard', 'plan', 'calendar', 'events', 'searchDay', 'tasks', 'export', 'team', 'kpi', 'playbook'],
+  'VP Community': ['dashboard', 'plan', 'calendar', 'crm', 'content', 'outreach', 'templates', 'team', 'kpi', 'playbook'],
+  'Member': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'chat', 'memberTasks', 'playbook'],
   'Potential Member': ['dashboard', 'plan', 'calendar'],
 };
 

@@ -22,6 +22,7 @@ import Outreach from './pages/Outreach';
 import Settings from './pages/Settings';
 import MemberTasks from './pages/MemberTasks';
 import KPITracker from './pages/KPITracker';
+import Playbook from './pages/Playbook';
 import Login from './pages/Login';
 import { useStore } from './store';
 import { getUserModules, canAccessPath } from './lib/permissions';
@@ -87,6 +88,7 @@ export default function App() {
             <Route path="/team-portal" element={<ProtectedRoute moduleKey="teamPortal"><TeamPortal /></ProtectedRoute>} />
             <Route path="/member-tasks" element={<ProtectedRoute moduleKey="memberTasks"><MemberTasks /></ProtectedRoute>} />
             <Route path="/kpi" element={<ProtectedRoute moduleKey="kpi"><KPITracker /></ProtectedRoute>} />
+            <Route path="/playbook" element={<ProtectedRoute moduleKey="playbook"><Playbook /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute moduleKey="settings"><Settings /></ProtectedRoute>} />
           </Routes>
         </main>
