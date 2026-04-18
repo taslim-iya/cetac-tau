@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach } from './types';
 import { id } from './lib/utils';
+import { loadRemoteState, saveRemoteState, mergeState } from './lib/sync';
 
 interface S {
   contacts: Contact[]; team: TeamMember[]; tasks: Task[]; events: CETACEvent[];
@@ -192,6 +193,28 @@ export const useStore = create<S>()(
       addUser: (user) => set(s => ({ users: [...s.users, { ...user, id: id() }] })),
       removeUser: (userId) => set(s => ({ users: s.users.filter(u => u.id !== userId) })),
     }),
-    { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks }) }
+    {
+      name: 'cetac-store',
+      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks }),
+      onRehydrate: () => {
+        // After localStorage rehydration, fetch remote state and merge
+        setTimeout(async () => {
+          try {
+            const remote = await loadRemoteState();
+            if (remote) {
+              const local = useStore.getState();
+              const merged = mergeState(local as any, remote);
+              useStore.setState(merged);
+            }
+          } catch {}
+        }, 500);
+      },
+    }
   )
 );
+
+// Subscribe to changes and sync to remote (debounced)
+useStore.subscribe((state) => {
+  const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks } = state;
+  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks });
+});
