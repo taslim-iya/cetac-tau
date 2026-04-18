@@ -23,6 +23,32 @@ const COLUMNS = [
   { key: 'notes', label: 'Notes', hidden: true },
 ];
 
+// Flexible column matching — tries multiple patterns for each field
+function buildColumnMap(headers: string[]): Record<string, string> {
+  const lower = headers.map(h => h.toLowerCase().trim());
+  
+  const find = (...patterns: (string | RegExp)[]) => {
+    for (const p of patterns) {
+      const idx = lower.findIndex(h => typeof p === 'string' ? h === p || h.includes(p) : p.test(h));
+      if (idx >= 0) return headers[idx];
+    }
+    return '';
+  };
+
+  return {
+    name: find('full name', 'fullname', 'contact name', 'contactname', 'person', 'contact', 'name', /^first/),
+    firstName: find('first name', 'firstname', 'first', 'given name'),
+    lastName: find('last name', 'lastname', 'last', 'surname', 'family name'),
+    email: find('email', 'e-mail', 'mail', /email/),
+    phone: find('phone', 'mobile', 'cell', 'telephone', 'tel', /phone/),
+    linkedin: find('linkedin', 'linked in', /linkedin/),
+    organisation: find('organisation', 'organization', 'company', 'firm', 'business', 'employer', 'org', /compan/),
+    role: find('role', 'title', 'position', 'job title', 'job role', 'designation', /title|role|position/),
+    notes: find('notes', 'note', 'comments', 'comment', 'description', 'desc', 'info', 'details'),
+    type: find('type', 'category', 'contact type', 'status'),
+  };
+}
+
 export default function CRM() {
   const { contacts, update, add, remove } = useStore();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -36,6 +62,7 @@ export default function CRM() {
       if (file.name.endsWith('.csv')) {
         const text = await file.text();
         const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length === 0) { setImportMsg('Empty file'); return; }
         headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
         data = lines.slice(1).map(line => {
           const vals = line.split(',').map(v => v.trim().replace(/"/g, ''));
@@ -48,43 +75,77 @@ export default function CRM() {
         const wb = XLSX.read(buf, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[][];
-        if (json.length > 0) {
-          headers = (json[0] || []).map(h => h != null ? String(h).trim() : '').filter(Boolean);
-          data = json.slice(1).filter(row => row && row.length > 0).map(row => {
-            const obj: Record<string, string> = {};
-            headers.forEach((h, i) => obj[h] = row[i] != null ? String(row[i]).trim() : '');
-            return obj;
-          });
+        if (json.length === 0) { setImportMsg('Empty spreadsheet'); return; }
+        
+        // Find the header row — sometimes row 0 is a title, look for row with most non-empty cells
+        let headerIdx = 0;
+        if (json.length > 2) {
+          let maxCols = 0;
+          for (let i = 0; i < Math.min(5, json.length); i++) {
+            const nonEmpty = (json[i] || []).filter(c => c != null && String(c).trim()).length;
+            if (nonEmpty > maxCols) { maxCols = nonEmpty; headerIdx = i; }
+          }
         }
+        
+        headers = (json[headerIdx] || []).map(h => h != null ? String(h).trim() : '').filter(Boolean);
+        data = json.slice(headerIdx + 1).filter(row => row && row.some((c: any) => c != null && String(c).trim())).map(row => {
+          const obj: Record<string, string> = {};
+          headers.forEach((h, i) => obj[h] = row[i] != null ? String(row[i]).trim() : '');
+          return obj;
+        });
       } else {
         setImportMsg('Unsupported file type. Use CSV or Excel.');
         return;
       }
 
-      const findHeader = (pattern: RegExp | string) => {
-        const match = headers.find(h => typeof pattern === 'string' ? h.toLowerCase().includes(pattern) : pattern.test(h.toLowerCase()));
-        return match || '';
-      };
+      if (data.length === 0) { setImportMsg('No data rows found'); return; }
+
+      const colMap = buildColumnMap(headers);
 
       let imported = 0;
       data.forEach(row => {
-        const name = (row[findHeader('name')] || '').trim();
+        // Build name from either full name column or first+last
+        let name = colMap.name ? (row[colMap.name] || '').trim() : '';
+        if (!name && colMap.firstName) {
+          const first = (row[colMap.firstName] || '').trim();
+          const last = colMap.lastName ? (row[colMap.lastName] || '').trim() : '';
+          name = [first, last].filter(Boolean).join(' ');
+        }
+        // If still no name, try the first column as fallback
+        if (!name && headers.length > 0) {
+          const firstVal = (row[headers[0]] || '').trim();
+          // Only use if it looks like a name (has letters, not too long, not a number)
+          if (firstVal && firstVal.length < 60 && /[a-zA-Z]/.test(firstVal) && !/^\d+$/.test(firstVal)) {
+            name = firstVal;
+          }
+        }
         if (!name) return;
+
+        // Detect type from column if present
+        const rawType = colMap.type ? (row[colMap.type] || '').toLowerCase().trim() : '';
+        const validTypes = ['team', 'investor', 'advisor', 'alumni', 'partner', 'sponsor', 'speaker', 'prospect'];
+        const type = validTypes.includes(rawType) ? rawType : 'prospect';
+
         add('contacts', {
           name,
-          email: row[findHeader('email')] || '',
-          phone: row[findHeader('phone')] || '',
-          linkedin: row[findHeader('linkedin')] || '',
-          type: 'prospect',
-          organisation: row[findHeader(/organ|company|firm/)] || '',
-          role: row[findHeader(/role|title|position/)] || '',
-          notes: row[findHeader('note')] || '',
+          email: colMap.email ? row[colMap.email] || '' : '',
+          phone: colMap.phone ? row[colMap.phone] || '' : '',
+          linkedin: colMap.linkedin ? row[colMap.linkedin] || '' : '',
+          type: type as any,
+          organisation: colMap.organisation ? row[colMap.organisation] || '' : '',
+          role: colMap.role ? row[colMap.role] || '' : '',
+          notes: colMap.notes ? row[colMap.notes] || '' : '',
           tags: [],
         });
         imported++;
       });
-      setImportMsg(`Imported ${imported} contacts from ${file.name}`);
-      setTimeout(() => setImportMsg(''), 5000);
+
+      const mapped = Object.entries(colMap).filter(([, v]) => v).map(([k, v]) => `${k}="${v}"`).join(', ');
+      setImportMsg(imported > 0
+        ? `Imported ${imported} contacts (${mapped})`
+        : `0 contacts imported. Headers found: ${headers.join(', ')}. Could not detect a name column.`
+      );
+      setTimeout(() => setImportMsg(''), 10000);
     } catch (err) {
       setImportMsg(`Error: ${err}`);
     }
@@ -106,7 +167,7 @@ export default function CRM() {
       </div>
 
       {importMsg && (
-        <div style={{ padding: '8px 14px', marginBottom: 16, borderRadius: 4, background: importMsg.startsWith('Error') ? 'var(--red-light)' : 'var(--green-light)', color: importMsg.startsWith('Error') ? 'var(--red)' : 'var(--green)', fontSize: 12, fontWeight: 600 }}>
+        <div style={{ padding: '8px 14px', marginBottom: 16, borderRadius: 4, background: importMsg.includes('0 contacts') || importMsg.startsWith('Error') ? 'var(--red-light)' : 'var(--green-light)', color: importMsg.includes('0 contacts') || importMsg.startsWith('Error') ? 'var(--red)' : 'var(--green)', fontSize: 12, fontWeight: 600 }}>
           {importMsg}
         </div>
       )}
