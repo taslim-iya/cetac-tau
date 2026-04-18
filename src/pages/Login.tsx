@@ -18,25 +18,28 @@ export default function Login() {
     <div className="login-container">
       <div className="login-box">
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 4, background: 'var(--accent)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 20, fontWeight: 800, fontFamily: 'var(--serif)', marginBottom: 16 }}>C</div>
-          <h1 style={{ fontFamily: 'var(--serif)', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>CETAC</h1>
-          <p style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>Cambridge ETA & Acquisition Club</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
+            <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 28, color: 'var(--text)', letterSpacing: '-0.02em' }}>ETA</span>
+            <span style={{ width: 1, height: 22, background: 'var(--border)' }} />
+            <span style={{ fontFamily: 'var(--sans)', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, lineHeight: 1.3, textAlign: 'left' }}>Cambridge<br />Judge</span>
+          </div>
+          <div style={{ fontFamily: 'var(--sans)', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Management Platform</div>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Email</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13, outline: 'none', fontFamily: 'var(--sans)', background: 'var(--bg)', color: 'var(--text)' }}
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 2, fontSize: 13, outline: 'none', fontFamily: 'var(--sans)', background: 'var(--bg)', color: 'var(--text)' }}
               placeholder="admin@etacambridge.co.uk" />
           </div>
           <div style={{ marginBottom: 24 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Password</label>
+            <label style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13, outline: 'none', fontFamily: 'var(--sans)', background: 'var(--bg)', color: 'var(--text)' }} />
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 2, fontSize: 13, outline: 'none', fontFamily: 'var(--sans)', background: 'var(--bg)', color: 'var(--text)' }} />
           </div>
-          {error && <div style={{ color: 'var(--red)', fontSize: 12, marginBottom: 12, fontWeight: 500 }}>{error}</div>}
-          <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '10px 16px' }}>
+          {error && <div style={{ color: 'var(--red)', fontSize: 11, marginBottom: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{error}</div>}
+          <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px 16px' }}>
             Sign In
           </button>
         </form>

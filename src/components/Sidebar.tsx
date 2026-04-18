@@ -13,7 +13,7 @@ const nav = [
   { path: '/member-tasks', icon: ClipboardList, label: 'Member Tasks' },
   { path: '/events', icon: Calendar, label: 'Events' },
   { path: '/partnerships', icon: Handshake, label: 'Partnerships' },
-  { path: '/sponsors', icon: Award, label: 'Sponsor Pipeline' },
+  { path: '/sponsors', icon: Award, label: 'Sponsors' },
   { path: '/crm', icon: Users, label: 'CRM' },
   { path: '/roles', icon: UserPlus, label: 'Roles' },
   { path: '/content', icon: BookOpen, label: 'Content' },
@@ -29,9 +29,9 @@ const nav = [
 const mobileNav = [
   { path: '/', icon: LayoutDashboard, label: 'Home' },
   { path: '/tasks', icon: CheckSquare, label: 'Tasks' },
-  { path: '/calendar', icon: Calendar, label: 'Calendar' },
-  { path: '/crm', icon: Users, label: 'CRM' },
   { path: '/chat', icon: MessageSquare, label: 'Chat' },
+  { path: '/crm', icon: Users, label: 'CRM' },
+  { path: '/settings', icon: Settings, label: 'More' },
 ];
 
 export default function Sidebar() {
@@ -41,19 +41,21 @@ export default function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="desktop-sidebar" style={{ width: 210, borderRight: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0, overflow: 'auto' }}>
-        <div style={{ padding: '16px 16px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 4, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 12, fontWeight: 800, fontFamily: 'var(--serif)' }}>C</div>
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--serif)', lineHeight: 1.2 }}>CETAC</div>
-              <div style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--sans)' }}>Cambridge ETA Club</div>
-            </div>
+      <aside className="desktop-sidebar" style={{ width: 200, borderRight: '1px solid var(--border)', background: 'var(--bg)', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0, overflow: 'auto' }}>
+        {/* Logo — WPDS editorial style */}
+        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+            <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 22, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>ETA</span>
+            <span style={{ width: 1, height: 18, background: 'var(--border)' }} />
+            <span style={{ fontFamily: 'var(--sans)', fontSize: 9, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, lineHeight: 1.3 }}>Cambridge<br />Judge</span>
           </div>
-          <Notifications />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontFamily: 'var(--sans)', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Management</span>
+            <Notifications />
+          </div>
         </div>
 
-        <nav style={{ flex: 1, padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <nav style={{ flex: 1, padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 0 }}>
           {nav.map(({ path, icon: Icon, label }) => {
             const active = path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path);
             return (
@@ -65,31 +67,31 @@ export default function Sidebar() {
         </nav>
 
         <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0' }}>
-          <button onClick={toggleDarkMode} className="nav-item" style={{ marginBottom: 1 }}>
-            {darkMode ? <Sun size={14} /> : <Moon size={14} />} {darkMode ? 'Light' : 'Dark'}
+          <button onClick={toggleDarkMode} className="nav-item">
+            {darkMode ? <Sun size={14} /> : <Moon size={14} />} {darkMode ? 'Light Mode' : 'Dark Mode'}
           </button>
           <NavLink to="/settings" className={cn('nav-item', loc.pathname === '/settings' && 'nav-item-active')}>
             <Settings size={14} strokeWidth={1.5} /> Settings
           </NavLink>
-          <button onClick={logout} className="nav-item" style={{ color: 'var(--text-3)' }}>
+          <button onClick={logout} className="nav-item">
             <LogOut size={14} /> Sign Out
           </button>
           {currentUser && (
-            <div style={{ padding: '6px 14px', fontSize: 10, color: 'var(--text-3)' }}>
-              {currentUser.name} ({currentUser.role === 'super_admin' ? 'Admin' : 'Member'})
+            <div style={{ padding: '8px 16px', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {currentUser.name}
             </div>
           )}
         </div>
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="mobile-nav" style={{ display: 'none', position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg)', borderTop: '1px solid var(--border)', zIndex: 100, justifyContent: 'space-around', padding: '6px 0 env(safe-area-inset-bottom, 6px)' }}>
+      <nav className="mobile-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg)', borderTop: '1px solid var(--border)', zIndex: 100, justifyContent: 'space-around', padding: '8px 0 max(8px, env(safe-area-inset-bottom))' }}>
         {mobileNav.map(({ path, icon: Icon, label }) => {
           const active = path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path);
           return (
-            <NavLink key={path} to={path} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, textDecoration: 'none', padding: '4px 8px', minWidth: 44 }}>
-              <Icon size={18} color={active ? 'var(--accent)' : 'var(--text-3)'} />
-              <span style={{ fontSize: 9, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text-3)' }}>{label}</span>
+            <NavLink key={path} to={path} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none', padding: '4px 12px' }}>
+              <Icon size={20} strokeWidth={1.5} color={active ? 'var(--text)' : 'var(--text-3)'} />
+              <span style={{ fontSize: 9, fontWeight: active ? 700 : 500, color: active ? 'var(--text)' : 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
             </NavLink>
           );
         })}

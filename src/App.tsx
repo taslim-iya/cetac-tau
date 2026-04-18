@@ -29,7 +29,8 @@ export default function App() {
   const currentUser = useStore(s => s.currentUser);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
+    // Dark is default; toggle adds 'light' class
+    document.documentElement.classList.toggle('light', !darkMode);
   }, [darkMode]);
 
   if (!currentUser) return <Login />;

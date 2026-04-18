@@ -115,7 +115,7 @@ export const useStore = create<S>()(
       users: DEFAULT_USERS,
       currentUser: null,
       memberTasks: [],
-      darkMode: false,
+      darkMode: true,
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
 
       login: (email: string, password: string) => {
