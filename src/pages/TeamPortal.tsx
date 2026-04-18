@@ -178,10 +178,14 @@ export default function TeamPortal() {
         {/* Existing accounts list */}
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {users.map(u => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 3, background: 'var(--bg-2)', fontSize: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontWeight: 600 }}>{u.name}</span>
-                <span style={{ color: 'var(--text-3)' }}>{u.email}</span>
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 3, background: 'var(--bg-2)', fontSize: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 600, minWidth: 80 }}>{u.name}</span>
+                <span style={{ color: 'var(--text-3)', minWidth: 180 }}>{u.email}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>pw:</span>
+                  <code style={{ fontSize: 11, background: 'var(--bg)', padding: '1px 6px', borderRadius: 2, color: 'var(--text)', fontFamily: 'monospace', letterSpacing: '0.03em' }}>{u.password}</code>
+                </div>
                 <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 2, background: u.role === 'super_admin' ? 'var(--gold-light)' : 'var(--blue-light)', color: u.role === 'super_admin' ? 'var(--gold)' : 'var(--blue)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                   {u.role === 'super_admin' ? 'Admin' : 'Member'}
                 </span>
