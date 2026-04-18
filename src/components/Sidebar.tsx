@@ -43,11 +43,9 @@ export default function Sidebar() {
       {/* Desktop sidebar */}
       <aside className="desktop-sidebar" style={{ width: 200, borderRight: '1px solid var(--border)', background: 'var(--bg)', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0, overflow: 'auto' }}>
         {/* Logo — WPDS editorial style */}
-        <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 22, color: 'var(--text)', letterSpacing: '-0.02em', lineHeight: 1 }}>ETA</span>
-            <span style={{ width: 1, height: 18, background: 'var(--border)' }} />
-            <span style={{ fontFamily: 'var(--sans)', fontSize: 9, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, lineHeight: 1.3 }}>Cambridge<br />Judge</span>
+            <img src="/logo.jpg" alt="Cambridge ETA Club" style={{ height: 32, objectFit: 'contain' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontFamily: 'var(--sans)', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Management</span>

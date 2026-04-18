@@ -18,11 +18,7 @@ export default function Login() {
     <div className="login-container">
       <div className="login-box">
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
-            <span style={{ fontFamily: 'var(--serif)', fontWeight: 700, fontSize: 28, color: 'var(--text)', letterSpacing: '-0.02em' }}>ETA</span>
-            <span style={{ width: 1, height: 22, background: 'var(--border)' }} />
-            <span style={{ fontFamily: 'var(--sans)', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, lineHeight: 1.3, textAlign: 'left' }}>Cambridge<br />Judge</span>
-          </div>
+          <img src="/logo.jpg" alt="Cambridge ETA Club" style={{ height: 48, objectFit: 'contain', marginBottom: 16 }} />
           <div style={{ fontFamily: 'var(--sans)', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Management Platform</div>
         </div>
 
