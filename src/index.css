@@ -193,19 +193,28 @@ h1, h2, h3 { font-family: var(--serif); letter-spacing: -0.02em; }
 .desktop-sidebar { display: flex; }
 .mobile-nav { display: none !important; }
 
+/* DataTable wrapper — always scroll horizontally on small screens */
+.data-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Mobile */
 @media (max-width: 768px) {
   .desktop-sidebar { display: none !important; }
   .mobile-nav { display: flex !important; }
-  .page-content, main > div { padding: 16px !important; }
+  .page-content, main > div { padding: 16px 12px !important; }
   .page-header h1 { font-size: 22px; }
   .page-header { padding-bottom: 12px; margin-bottom: 16px; }
-  .data-table { font-size: 11px; }
+  .page-header { flex-direction: column !important; }
+  .data-table { font-size: 11px; min-width: 600px; }
   .data-table th, .data-table td { padding: 4px 6px; }
   .login-box { margin: 16px; padding: 24px; }
+  .card { border-radius: 3px; }
 }
 
 @media (max-width: 480px) {
   .page-header h1 { font-size: 20px; }
   .btn-primary { padding: 6px 12px; font-size: 11px; }
+  .data-table { min-width: 500px; }
 }

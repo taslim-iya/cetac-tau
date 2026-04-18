@@ -104,8 +104,41 @@ const PARTNERSHIPS: Partnership[] = [
   { id: id(), name: 'debtadvisory.ai', type: 'advisor', contactPerson: 'Darren Coyne / Tom Greene', contactEmail: '', status: 'prospect', notes: 'Week 5 event. Acquisition finance.', lastContactDate: '', nextAction: 'Confirm event details', createdAt: new Date().toISOString() },
 ];
 
+// Auto-generate credentials from name
+function makeEmail(name: string) { return `${name.toLowerCase().replace(/\s+/g, '.')}@etacambridge.co.uk`; }
+function makePassword(name: string) { return `cetac-${name.toLowerCase()}26`; }
+
+// Role-based permission presets
+const ROLE_PERMS: Record<string, Record<string, 'edit' | 'view'>> = {
+  'President': { dashboard: 'edit', plan: 'edit', calendar: 'edit', team: 'edit', tasks: 'edit', memberTasks: 'edit', events: 'edit', partnerships: 'edit', sponsors: 'edit', crm: 'edit', roles: 'edit', content: 'edit', outreach: 'edit', templates: 'edit', searchDay: 'edit', chat: 'edit', import: 'edit', export: 'edit', teamPortal: 'edit', settings: 'edit' },
+  'VP Partnerships — External': { dashboard: 'view', plan: 'view', calendar: 'view', partnerships: 'edit', sponsors: 'edit', crm: 'edit', outreach: 'edit', templates: 'edit', searchDay: 'view', export: 'view', tasks: 'view', events: 'view' },
+  'VP Communications & Sponsorship': { dashboard: 'view', plan: 'view', calendar: 'view', content: 'edit', outreach: 'edit', templates: 'edit', crm: 'view', sponsors: 'edit', tasks: 'view', events: 'view', export: 'view' },
+  'VP Operations': { dashboard: 'view', plan: 'edit', calendar: 'edit', tasks: 'edit', events: 'edit', roles: 'edit', memberTasks: 'edit', team: 'edit', teamPortal: 'view', export: 'edit', import: 'edit', settings: 'view' },
+  'VP Administration & Events': { dashboard: 'view', plan: 'view', calendar: 'edit', events: 'edit', searchDay: 'edit', tasks: 'edit', export: 'view', import: 'view' },
+  'VP Community': { dashboard: 'view', plan: 'view', calendar: 'view', crm: 'edit', content: 'edit', outreach: 'edit', templates: 'view', tasks: 'view', events: 'view' },
+  'Member': { dashboard: 'view', plan: 'view', calendar: 'view', tasks: 'view', events: 'view', memberTasks: 'view', chat: 'edit' },
+  'Potential Member': { dashboard: 'view', plan: 'view', calendar: 'view' },
+};
+
+function permsForRole(role: string): Record<string, 'edit' | 'view'> {
+  if (ROLE_PERMS[role]) return ROLE_PERMS[role];
+  if (role.startsWith('VP')) return ROLE_PERMS['Member'];
+  if (role.includes('Potential')) return ROLE_PERMS['Potential Member'];
+  return ROLE_PERMS['Member'];
+}
+
 const DEFAULT_USERS: CETACUser[] = [
   { id: id(), email: 'admin@etacambridge.co.uk', name: 'Admin', password: 'cetac2026', role: 'super_admin', permissions: {} },
+  // Auto-generated team accounts
+  ...TEAM.map(m => ({
+    id: id(),
+    email: makeEmail(m.name),
+    name: m.name,
+    password: makePassword(m.name),
+    role: (m.role === 'President' ? 'super_admin' : 'team_member') as 'super_admin' | 'team_member',
+    permissions: permsForRole(m.role),
+    teamMemberId: m.id,
+  })),
 ];
 
 export const useStore = create<S>()(
@@ -127,7 +160,28 @@ export const useStore = create<S>()(
       },
       logout: () => set({ currentUser: null }),
 
-      add: (key, item) => set(s => ({ [key]: [{ ...item, id: id(), createdAt: new Date().toISOString() }, ...(s as any)[key]] })),
+      add: (key, item) => {
+        const newId = id();
+        const newItem = { ...item, id: newId, createdAt: new Date().toISOString() };
+        set(s => {
+          const updated: any = { [key]: [newItem, ...(s as any)[key]] };
+          // Auto-create user account when adding a team member
+          if (key === 'team' && (item as any).name) {
+            const name = (item as any).name;
+            const role = (item as any).role || 'Member';
+            const email = makeEmail(name);
+            // Don't create duplicate
+            if (!s.users.find(u => u.email === email)) {
+              updated.users = [...s.users, {
+                id: id(), email, name, password: makePassword(name),
+                role: (role === 'President' ? 'super_admin' : 'team_member') as 'super_admin' | 'team_member',
+                permissions: permsForRole(role), teamMemberId: newId,
+              }];
+            }
+          }
+          return updated;
+        });
+      },
       update: (key, itemId, updates) => set(s => ({ [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) })),
       remove: (key, itemId) => set(s => ({ [key]: (s as any)[key].filter((i: any) => i.id !== itemId) })),
       updateSettings: (upd) => set(s => ({ settings: { ...s.settings, ...upd } })),

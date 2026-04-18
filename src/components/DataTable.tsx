@@ -185,7 +185,7 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
       </div>
 
       {/* Table */}
-      <div className="card" style={{ overflow: 'auto' }}>
+      <div className="card data-table-wrap" style={{ overflow: 'auto' }}>
         <table className="data-table">
           <thead>
             <tr>

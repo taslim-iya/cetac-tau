@@ -240,11 +240,32 @@ export default function TeamPortal() {
                 <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: 'var(--accent)' }}>
                   {selected.name.charAt(0)}
                 </div>
-                <div>
+                <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{selected.name}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-2)' }}>{selected.role}</div>
                 </div>
               </div>
+
+              {/* Login credentials */}
+              {(() => {
+                const userAcct = users.find(u => u.name === selected.name || u.teamMemberId === selected.id);
+                return userAcct ? (
+                  <div style={{ padding: '8px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, marginBottom: 10, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Login</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Email:</span>
+                      <code style={{ fontSize: 11, color: 'var(--text)', background: 'var(--bg-3)', padding: '1px 6px', borderRadius: 2 }}>{userAcct.email}</code>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Password:</span>
+                      <code style={{ fontSize: 11, color: 'var(--text)', background: 'var(--bg-3)', padding: '1px 6px', borderRadius: 2 }}>{userAcct.password}</code>
+                    </div>
+                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 2, background: userAcct.role === 'super_admin' ? 'var(--gold-light)' : 'var(--blue-light)', color: userAcct.role === 'super_admin' ? 'var(--gold)' : 'var(--blue)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      {userAcct.role === 'super_admin' ? 'Admin' : 'Member'}
+                    </span>
+                  </div>
+                ) : null;
+              })()}
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {/* Admin toggle */}
