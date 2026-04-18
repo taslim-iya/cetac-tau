@@ -121,7 +121,7 @@ const ROLE_PERMS: Record<string, Record<string, 'edit' | 'view'>> = {
   'Potential Member': { dashboard: 'view', plan: 'view', calendar: 'view' },
 };
 
-function permsForRole(role: string): Record<string, 'edit' | 'view'> {
+export function permsForRole(role: string): Record<string, 'edit' | 'view'> {
   if (ROLE_PERMS[role]) return ROLE_PERMS[role];
   if (role.startsWith('VP')) return ROLE_PERMS['Member'];
   if (role.includes('Potential')) return ROLE_PERMS['Potential Member'];
@@ -183,7 +183,22 @@ export const useStore = create<S>()(
           return updated;
         });
       },
-      update: (key, itemId, updates) => set(s => ({ [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) })),
+      update: (key, itemId, updates) => set(s => {
+        const result: any = { [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) };
+        // Auto-update user permissions when team member role changes
+        if (key === 'team' && updates.role) {
+          const member = s.team.find(m => m.id === itemId);
+          if (member) {
+            result.users = s.users.map(u => {
+              if (u.name === member.name || u.teamMemberId === itemId) {
+                return { ...u, permissions: permsForRole(updates.role), role: updates.role === 'President' ? 'super_admin' as const : 'team_member' as const };
+              }
+              return u;
+            });
+          }
+        }
+        return result;
+      }),
       remove: (key, itemId) => set(s => ({ [key]: (s as any)[key].filter((i: any) => i.id !== itemId) })),
       updateSettings: (upd) => set(s => ({ settings: { ...s.settings, ...upd } })),
 
