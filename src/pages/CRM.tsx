@@ -47,12 +47,12 @@ export default function CRM() {
         const buf = await file.arrayBuffer();
         const wb = XLSX.read(buf, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(ws, { header: 1 }) as any[][];
+        const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' }) as any[][];
         if (json.length > 0) {
-          headers = json[0].map(String);
-          data = json.slice(1).map(row => {
+          headers = (json[0] || []).map(h => h != null ? String(h).trim() : '').filter(Boolean);
+          data = json.slice(1).filter(row => row && row.length > 0).map(row => {
             const obj: Record<string, string> = {};
-            headers.forEach((h, i) => obj[h] = String(row[i] || ''));
+            headers.forEach((h, i) => obj[h] = row[i] != null ? String(row[i]).trim() : '');
             return obj;
           });
         }
@@ -61,19 +61,24 @@ export default function CRM() {
         return;
       }
 
+      const findHeader = (pattern: RegExp | string) => {
+        const match = headers.find(h => typeof pattern === 'string' ? h.toLowerCase().includes(pattern) : pattern.test(h.toLowerCase()));
+        return match || '';
+      };
+
       let imported = 0;
       data.forEach(row => {
-        const name = row[headers.find(h => h.toLowerCase().includes('name')) || ''] || '';
+        const name = (row[findHeader('name')] || '').trim();
         if (!name) return;
         add('contacts', {
           name,
-          email: row[headers.find(h => h.toLowerCase().includes('email')) || ''] || '',
-          phone: row[headers.find(h => h.toLowerCase().includes('phone')) || ''] || '',
-          linkedin: row[headers.find(h => h.toLowerCase().includes('linkedin')) || ''] || '',
+          email: row[findHeader('email')] || '',
+          phone: row[findHeader('phone')] || '',
+          linkedin: row[findHeader('linkedin')] || '',
           type: 'prospect',
-          organisation: row[headers.find(h => h.toLowerCase().match(/organ|company|firm/)) || ''] || '',
-          role: row[headers.find(h => h.toLowerCase().match(/role|title|position/)) || ''] || '',
-          notes: row[headers.find(h => h.toLowerCase().includes('note')) || ''] || '',
+          organisation: row[findHeader(/organ|company|firm/)] || '',
+          role: row[findHeader(/role|title|position/)] || '',
+          notes: row[findHeader('note')] || '',
           tags: [],
         });
         imported++;
