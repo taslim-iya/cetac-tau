@@ -1,37 +1,35 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ETA Cambridge WPDS Dark Editorial — matches etacambridge.co.uk */
+/* ETA Cambridge — WPDS Editorial Light */
 :root {
-  --bg: #111111;
-  --bg-2: #1a1a1a;
-  --bg-3: #222222;
-  --surface: #1a1a1a;
-  --surface-hover: #222222;
-  --border: #2a2a2a;
-  --border-subtle: #1f1f1f;
-  --text: #eeeeee;
-  --text-2: #999999;
-  --text-3: #666666;
-  --accent: #eeeeee;
-  --accent-hover: #ffffff;
-  --accent-light: rgba(255,255,255,0.06);
+  --bg: #fafaf9;
+  --bg-2: #f5f5f3;
+  --bg-3: #eeede9;
+  --surface: #ffffff;
+  --surface-hover: #f9f9f7;
+  --border: #dddcd8;
+  --border-subtle: #eeeee9;
+  --text: #1a1a1a;
+  --text-2: #555555;
+  --text-3: #888888;
+  --accent: #1a1a1a;
+  --accent-hover: #000000;
+  --accent-light: rgba(0,0,0,0.04);
   --gold: #B8860B;
-  --gold-light: rgba(184,134,11,0.12);
-  --green: #3fb950;
-  --green-light: rgba(63,185,80,0.1);
-  --orange: #d29922;
-  --orange-light: rgba(210,153,34,0.1);
-  --red: #f85149;
-  --red-light: rgba(248,81,73,0.1);
-  --yellow: #e3b341;
-  --yellow-light: rgba(227,179,65,0.1);
-  --blue: #58a6ff;
-  --blue-light: rgba(88,166,255,0.1);
-  --kicker: #999999;
+  --gold-light: rgba(184,134,11,0.08);
+  --green: #16a34a;
+  --green-light: rgba(22,163,74,0.08);
+  --orange: #ea580c;
+  --orange-light: rgba(234,88,12,0.08);
+  --red: #dc2626;
+  --red-light: rgba(220,38,38,0.08);
+  --yellow: #ca8a04;
+  --yellow-light: rgba(202,138,4,0.08);
+  --blue: #2563eb;
+  --blue-light: rgba(37,99,235,0.08);
   --serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
   --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --meta: var(--sans);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -46,12 +44,12 @@ body {
 
 h1, h2, h3 { font-family: var(--serif); letter-spacing: -0.02em; }
 
-::selection { background: rgba(255,255,255,0.15); color: #fff; }
+::selection { background: rgba(0,0,0,0.08); color: #000; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* Sidebar nav — editorial, clean */
+/* Sidebar nav — editorial */
 .nav-item {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 16px; font-size: 13px;
@@ -73,7 +71,7 @@ h1, h2, h3 { font-family: var(--serif); letter-spacing: -0.02em; }
   width: 100%; font-family: inherit; transition: border-color 0.15s;
 }
 .edit-cell:hover { border-color: var(--border); }
-.edit-cell:focus { border-color: var(--text-3); background: var(--bg-3); }
+.edit-cell:focus { border-color: var(--text-3); background: var(--surface); }
 
 /* Status badges */
 .badge {
@@ -87,13 +85,13 @@ h1, h2, h3 { font-family: var(--serif); letter-spacing: -0.02em; }
 .data-table th {
   padding: 10px 12px; text-align: left; font-size: 10px; font-weight: 700;
   color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em;
-  border-bottom: 1px solid var(--border); background: var(--bg-2);
+  border-bottom: 1px solid var(--text); background: var(--bg);
   position: sticky; top: 0; z-index: 1; font-family: var(--sans);
 }
 .data-table td { padding: 6px 10px; border-bottom: 1px solid var(--border-subtle); }
 .data-table tr:hover td { background: var(--surface-hover); }
 
-/* Cards — dark editorial */
+/* Cards */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -103,7 +101,7 @@ h1, h2, h3 { font-family: var(--serif); letter-spacing: -0.02em; }
 .card:hover { border-color: var(--text-3); }
 .card-accent { border-top: 1px solid var(--text-3); }
 
-/* Button primary — WPDS editorial style */
+/* Button primary — WPDS editorial: outlined, uppercase */
 .btn-primary {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border: 1px solid var(--text);
@@ -152,46 +150,36 @@ h1, h2, h3 { font-family: var(--serif); letter-spacing: -0.02em; }
   margin-top: 20px;
 }
 
-/* Kicker text — WPDS meta style */
-.kicker {
-  font-family: var(--sans);
-  font-size: 11px;
-  color: var(--text-3);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-weight: 700;
+/* Dark mode */
+.dark {
+  --bg: #111111;
+  --bg-2: #1a1a1a;
+  --bg-3: #222222;
+  --surface: #1a1a1a;
+  --surface-hover: #222222;
+  --border: #2a2a2a;
+  --border-subtle: #1f1f1f;
+  --text: #eeeeee;
+  --text-2: #999999;
+  --text-3: #666666;
+  --accent: #eeeeee;
+  --accent-hover: #ffffff;
+  --accent-light: rgba(255,255,255,0.06);
+  --gold: #d4a853;
+  --gold-light: rgba(212,168,83,0.1);
+  --green: #3fb950;
+  --green-light: rgba(63,185,80,0.1);
+  --red: #f85149;
+  --red-light: rgba(248,81,73,0.1);
+  --orange: #d29922;
+  --orange-light: rgba(210,153,34,0.1);
+  --yellow: #e3b341;
+  --yellow-light: rgba(227,179,65,0.1);
+  --blue: #58a6ff;
+  --blue-light: rgba(88,166,255,0.1);
 }
 
-/* Light mode override */
-.light {
-  --bg: #ffffff;
-  --bg-2: #f8f8fa;
-  --bg-3: #f0f0f4;
-  --surface: #ffffff;
-  --surface-hover: #f8f8fa;
-  --border: #e2e2e6;
-  --border-subtle: #eeeeef;
-  --text: #1a1a2e;
-  --text-2: #4a4a5a;
-  --text-3: #8a8a9a;
-  --accent: #1a1a2e;
-  --accent-hover: #000000;
-  --accent-light: rgba(0,0,0,0.04);
-  --gold: #B8860B;
-  --gold-light: rgba(184,134,11,0.08);
-  --green: #16a34a;
-  --green-light: #dcfce7;
-  --red: #dc2626;
-  --red-light: #fef2f2;
-  --orange: #ea580c;
-  --orange-light: #fff7ed;
-  --yellow: #ca8a04;
-  --yellow-light: #fef9c3;
-  --blue: #2563eb;
-  --blue-light: #dbeafe;
-}
-
-/* Login page */
+/* Login */
 .login-container {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
   background: var(--bg);
@@ -202,28 +190,18 @@ h1, h2, h3 { font-family: var(--serif); letter-spacing: -0.02em; }
 }
 
 /* Desktop sidebar */
-.desktop-sidebar {
-  display: flex;
-}
+.desktop-sidebar { display: flex; }
+.mobile-nav { display: none !important; }
 
-/* Mobile bottom nav */
-.mobile-nav {
-  display: none !important;
-}
-
-/* Mobile responsive */
+/* Mobile */
 @media (max-width: 768px) {
   .desktop-sidebar { display: none !important; }
   .mobile-nav { display: flex !important; }
-
   .page-content, main > div { padding: 16px !important; }
-
   .page-header h1 { font-size: 22px; }
   .page-header { padding-bottom: 12px; margin-bottom: 16px; }
-
   .data-table { font-size: 11px; }
   .data-table th, .data-table td { padding: 4px 6px; }
-
   .login-box { margin: 16px; padding: 24px; }
 }
 
