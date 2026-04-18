@@ -20,6 +20,8 @@ interface S {
   addMemberTask: (task: Omit<MemberTask, 'id' | 'createdAt'>) => void;
   updateMemberTask: (taskId: string, updates: Partial<MemberTask>) => void;
   removeMemberTask: (taskId: string) => void;
+  addUser: (user: Omit<CETACUser, 'id'>) => void;
+  removeUser: (userId: string) => void;
 }
 
 const TEAM: TeamMember[] = [
@@ -133,6 +135,8 @@ export const useStore = create<S>()(
       addMemberTask: (task) => set(s => ({ memberTasks: [{ ...task, id: id(), createdAt: new Date().toISOString() }, ...s.memberTasks] })),
       updateMemberTask: (taskId, updates) => set(s => ({ memberTasks: s.memberTasks.map(t => t.id === taskId ? { ...t, ...updates } : t) })),
       removeMemberTask: (taskId) => set(s => ({ memberTasks: s.memberTasks.filter(t => t.id !== taskId) })),
+      addUser: (user) => set(s => ({ users: [...s.users, { ...user, id: id() }] })),
+      removeUser: (userId) => set(s => ({ users: s.users.filter(u => u.id !== userId) })),
     }),
     { name: 'cetac-store', partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks }) }
   )

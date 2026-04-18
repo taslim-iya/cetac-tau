@@ -47,7 +47,7 @@ interface MemberAccess {
 }
 
 export default function TeamPortal() {
-  const { team, update } = useStore();
+  const { team, update, users, addUser, removeUser } = useStore();
   const [accessList, setAccessList] = useState<MemberAccess[]>(() => {
     const saved = localStorage.getItem('cetac-access');
     if (saved) return JSON.parse(saved);
@@ -62,6 +62,8 @@ export default function TeamPortal() {
 
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [newAcct, setNewAcct] = useState({ name: '', email: '', password: '', role: 'team_member' as 'super_admin' | 'team_member' });
 
   const saveAccess = () => {
     localStorage.setItem('cetac-access', JSON.stringify(accessList));
@@ -125,6 +127,71 @@ export default function TeamPortal() {
         <button onClick={saveAccess} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: 'none', borderRadius: 6, background: saved ? 'var(--green)' : 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}>
           {saved ? <Check size={14} /> : <Save size={14} />} {saved ? 'Saved!' : 'Save Permissions'}
         </button>
+      </div>
+
+      {/* Account Management */}
+      <div className="card" style={{ padding: 16, marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showAddAccount ? 12 : 0 }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'var(--serif)' }}>Login Accounts</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{users.length} account{users.length !== 1 ? 's' : ''} — team members use these to sign in</div>
+          </div>
+          <button onClick={() => setShowAddAccount(!showAddAccount)} className="btn-primary" style={{ padding: '6px 12px', fontSize: 11 }}>
+            {showAddAccount ? 'Cancel' : '+ Create Account'}
+          </button>
+        </div>
+
+        {showAddAccount && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', padding: '12px 0', borderTop: '1px solid var(--border)', marginTop: 12 }}>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Name</label>
+              <input value={newAcct.name} onChange={e => setNewAcct(p => ({ ...p, name: e.target.value }))} placeholder="Andres"
+                style={{ padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 12, background: 'var(--bg)', color: 'var(--text)', width: 140 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Email</label>
+              <input value={newAcct.email} onChange={e => setNewAcct(p => ({ ...p, email: e.target.value }))} placeholder="andres@etacambridge.co.uk"
+                style={{ padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 12, background: 'var(--bg)', color: 'var(--text)', width: 220 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Password</label>
+              <input value={newAcct.password} onChange={e => setNewAcct(p => ({ ...p, password: e.target.value }))} placeholder="password"
+                style={{ padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 12, background: 'var(--bg)', color: 'var(--text)', width: 140 }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 4 }}>Role</label>
+              <select value={newAcct.role} onChange={e => setNewAcct(p => ({ ...p, role: e.target.value as any }))}
+                style={{ padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 12, background: 'var(--bg)', color: 'var(--text)' }}>
+                <option value="team_member">Team Member</option>
+                <option value="super_admin">Super Admin</option>
+              </select>
+            </div>
+            <button onClick={() => {
+              if (!newAcct.name || !newAcct.email || !newAcct.password) return;
+              addUser({ name: newAcct.name, email: newAcct.email, password: newAcct.password, role: newAcct.role, permissions: {} });
+              setNewAcct({ name: '', email: '', password: '', role: 'team_member' });
+              setShowAddAccount(false);
+            }} className="btn-primary" style={{ padding: '6px 12px', fontSize: 11 }}>Create</button>
+          </div>
+        )}
+
+        {/* Existing accounts list */}
+        <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {users.map(u => (
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderRadius: 3, background: 'var(--bg-2)', fontSize: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 600 }}>{u.name}</span>
+                <span style={{ color: 'var(--text-3)' }}>{u.email}</span>
+                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 2, background: u.role === 'super_admin' ? 'var(--gold-light)' : 'var(--blue-light)', color: u.role === 'super_admin' ? 'var(--gold)' : 'var(--blue)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {u.role === 'super_admin' ? 'Admin' : 'Member'}
+                </span>
+              </div>
+              {u.email !== 'admin@etacambridge.co.uk' && (
+                <button onClick={() => removeUser(u.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--red)' }}>Remove</button>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
