@@ -20,7 +20,7 @@ export default async function handler(req: any, res: any) {
       if (!r.ok) return res.json({ state: null });
       const state = await r.json();
       return res.json({ state });
-    } catch (e: any) {
+    } catch (e) {
       return res.json({ state: null, error: e.message });
     }
   }
@@ -28,7 +28,6 @@ export default async function handler(req: any, res: any) {
   if (req.method === 'POST') {
     try {
       const body = JSON.stringify(req.body);
-      // Upsert: PUT to overwrite existing
       const r = await fetch(`${SB_URL}/storage/v1/object/${BUCKET}/${FILE}`, {
         method: 'PUT',
         headers: { ...headers, 'Content-Type': 'application/json' },
@@ -46,7 +45,7 @@ export default async function handler(req: any, res: any) {
         }
       }
       return res.json({ ok: true });
-    } catch (e: any) {
+    } catch (e) {
       return res.status(500).json({ error: e.message });
     }
   }
