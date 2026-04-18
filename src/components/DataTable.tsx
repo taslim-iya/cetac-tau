@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { ArrowUpDown, ArrowUp, ArrowDown, Search, SlidersHorizontal, X, Trash2, Plus, GripVertical } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, Search, SlidersHorizontal, X, Trash2, Plus, GripVertical, CheckSquare, Square, MinusSquare } from 'lucide-react';
 import EditableCell from './EditableCell';
 
 interface Column {
@@ -38,6 +38,7 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
     return w;
   });
   const [dragColKey, setDragColKey] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const resizingRef = useRef<{ key: string; startX: number; startW: number } | null>(null);
 
   const toggleSort = (key: string) => {
@@ -53,21 +54,18 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
     });
   };
 
-  // Column order management
   const orderedCols = useMemo(() => {
     const ordered: Column[] = [];
     colOrder.forEach(key => {
       const col = columns.find(c => c.key === key);
       if (col && !hiddenCols.has(key)) ordered.push(col);
     });
-    // Add any new cols not in order
     columns.forEach(c => {
       if (!colOrder.includes(c.key) && !hiddenCols.has(c.key)) ordered.push(c);
     });
     return ordered;
   }, [columns, colOrder, hiddenCols]);
 
-  // Column drag reorder
   const handleColDragStart = (key: string) => setDragColKey(key);
   const handleColDragOver = (e: React.DragEvent, overKey: string) => {
     e.preventDefault();
@@ -83,13 +81,11 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
     });
   };
 
-  // Column resize
   const handleResizeStart = useCallback((e: React.MouseEvent, key: string) => {
     e.preventDefault();
     e.stopPropagation();
     const startW = colWidths[key] || 120;
     resizingRef.current = { key, startX: e.clientX, startW };
-
     const onMove = (ev: MouseEvent) => {
       if (!resizingRef.current) return;
       const diff = ev.clientX - resizingRef.current.startX;
@@ -130,56 +126,98 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
     return rows;
   }, [data, search, sortKey, sortDir, filterCol, filterVal, orderedCols]);
 
+  // Selection helpers
+  const toggleSelect = (id: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map(r => r.id)));
+    }
+  };
+
+  const deleteSelected = () => {
+    if (!confirm(`Delete ${selected.size} ${entityName || 'items'}?`)) return;
+    selected.forEach(id => onDelete(id));
+    setSelected(new Set());
+  };
+
+  const allSelected = filtered.length > 0 && selected.size === filtered.length;
+  const someSelected = selected.size > 0 && selected.size < filtered.length;
+
   return (
     <div>
       {/* Toolbar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
-          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${entityName || 'data'}...`}
-            style={{ width: '100%', padding: '7px 10px 7px 30px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, outline: 'none', background: 'var(--bg)', color: 'var(--text)', boxSizing: 'border-box', fontFamily: 'var(--sans)' }} />
-        </div>
-
-        <select value={filterCol} onChange={e => { setFilterCol(e.target.value); setFilterVal(''); }}
-          style={{ padding: '7px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 11, background: 'var(--bg)', color: 'var(--text)' }}>
-          <option value="">Filter by...</option>
-          {orderedCols.filter(c => c.type === 'select').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-        </select>
-        {filterCol && (
+        {selected.size > 0 ? (
           <>
-            <select value={filterVal} onChange={e => setFilterVal(e.target.value)}
-              style={{ padding: '7px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 11, background: 'var(--bg)', color: 'var(--text)' }}>
-              <option value="">All</option>
-              {columns.find(c => c.key === filterCol)?.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <button onClick={() => { setFilterCol(''); setFilterVal(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-              <X size={14} color="var(--text-3)" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'var(--red-light)', borderRadius: 6, fontSize: 12, fontWeight: 600, color: 'var(--red)' }}>
+              {selected.size} selected
+            </div>
+            <button onClick={deleteSelected} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 12px', border: 'none', borderRadius: 4, background: 'var(--red)', color: 'white', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              <Trash2 size={13} /> Delete Selected
+            </button>
+            <button onClick={() => setSelected(new Set())} style={{ padding: '7px 12px', border: '1px solid var(--border)', borderRadius: 4, background: 'var(--bg)', fontSize: 12, cursor: 'pointer', color: 'var(--text-2)' }}>
+              Cancel
             </button>
           </>
-        )}
-
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setShowColPicker(!showColPicker)}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 11, background: 'var(--bg)', color: 'var(--text-2)', cursor: 'pointer', fontWeight: 500 }}>
-            <SlidersHorizontal size={12} /> Columns
-          </button>
-          {showColPicker && (
-            <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, padding: 8, zIndex: 50, minWidth: 160, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
-              {columns.map(c => (
-                <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', fontSize: 11, cursor: 'pointer', borderRadius: 3 }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <input type="checkbox" checked={!hiddenCols.has(c.key)} onChange={() => toggleCol(c.key)} style={{ accentColor: 'var(--accent)' }} />
-                  {c.label}
-                </label>
-              ))}
+        ) : (
+          <>
+            <div style={{ position: 'relative', flex: '1 1 200px', maxWidth: 280 }}>
+              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)' }} />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder={`Search ${entityName || 'data'}...`}
+                style={{ width: '100%', padding: '7px 10px 7px 30px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, outline: 'none', background: 'var(--bg)', color: 'var(--text)', boxSizing: 'border-box', fontFamily: 'var(--sans)' }} />
             </div>
-          )}
-        </div>
 
-        {onAdd && (
-          <button onClick={onAdd} className="btn-primary">
-            <Plus size={13} /> {addLabel || 'Add'}
-          </button>
+            <select value={filterCol} onChange={e => { setFilterCol(e.target.value); setFilterVal(''); }}
+              style={{ padding: '7px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 11, background: 'var(--bg)', color: 'var(--text)' }}>
+              <option value="">Filter by...</option>
+              {orderedCols.filter(c => c.type === 'select').map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
+            </select>
+            {filterCol && (
+              <>
+                <select value={filterVal} onChange={e => setFilterVal(e.target.value)}
+                  style={{ padding: '7px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 11, background: 'var(--bg)', color: 'var(--text)' }}>
+                  <option value="">All</option>
+                  {columns.find(c => c.key === filterCol)?.options?.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                <button onClick={() => { setFilterCol(''); setFilterVal(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                  <X size={14} color="var(--text-3)" />
+                </button>
+              </>
+            )}
+
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowColPicker(!showColPicker)}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 11, background: 'var(--bg)', color: 'var(--text-2)', cursor: 'pointer', fontWeight: 500 }}>
+                <SlidersHorizontal size={12} /> Columns
+              </button>
+              {showColPicker && (
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, padding: 8, zIndex: 50, minWidth: 160, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+                  {columns.map(c => (
+                    <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', fontSize: 11, cursor: 'pointer', borderRadius: 3 }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <input type="checkbox" checked={!hiddenCols.has(c.key)} onChange={() => toggleCol(c.key)} style={{ accentColor: 'var(--accent)' }} />
+                      {c.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {onAdd && (
+              <button onClick={onAdd} className="btn-primary">
+                <Plus size={13} /> {addLabel || 'Add'}
+              </button>
+            )}
+          </>
         )}
         <div style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>{filtered.length} of {data.length}</div>
       </div>
@@ -189,6 +227,11 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
         <table className="data-table">
           <thead>
             <tr>
+              <th style={{ width: 32, padding: '0 4px' }}>
+                <div onClick={toggleSelectAll} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {allSelected ? <CheckSquare size={15} color="var(--accent)" /> : someSelected ? <MinusSquare size={15} color="var(--accent)" /> : <Square size={15} style={{ opacity: 0.3 }} />}
+                </div>
+              </th>
               {orderedCols.map(c => (
                 <th key={c.key}
                   draggable
@@ -202,7 +245,6 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
                     {c.label}
                     {sortKey === c.key ? (sortDir === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} style={{ opacity: 0.3 }} />}
                   </span>
-                  {/* Resize handle */}
                   <div onMouseDown={e => handleResizeStart(e, c.key)}
                     style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 4, cursor: 'col-resize', background: 'transparent' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--accent)'}
@@ -214,39 +256,47 @@ export default function DataTable({ columns, data, onUpdate, onDelete, onAdd, ad
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={orderedCols.length + 1} style={{ padding: 20, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
+              <tr><td colSpan={orderedCols.length + 2} style={{ padding: 20, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
                 {data.length === 0 ? `No ${entityName || 'data'} yet` : 'No matches'}
               </td></tr>
-            ) : filtered.map(row => (
-              <tr key={row.id}>
-                {orderedCols.map(c => (
-                  <td key={c.key} style={{ width: colWidths[c.key] || c.width }}>
-                    {c.render ? c.render(row[c.key], row) : (
-                      <EditableCell
-                        value={Array.isArray(row[c.key]) ? row[c.key].join(', ') : String(row[c.key] || '')}
-                        onChange={v => {
-                          if (c.type === 'tags' || c.key === 'assignees' || c.key === 'speakers' || c.key === 'sponsors') {
-                            onUpdate(row.id, { [c.key]: v.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean) });
-                          } else if (c.key === 'week' || c.key === 'attendeeCount') {
-                            onUpdate(row.id, { [c.key]: Number(v) || 0 });
-                          } else {
-                            onUpdate(row.id, { [c.key]: v });
-                          }
-                        }}
-                        type={c.type === 'select' ? 'select' : c.type === 'date' ? 'date' : 'text'}
-                        options={c.options}
-                        placeholder={c.label}
-                      />
-                    )}
+            ) : filtered.map(row => {
+              const isSelected = selected.has(row.id);
+              return (
+                <tr key={row.id} style={{ background: isSelected ? 'var(--accent-light)' : undefined }}>
+                  <td style={{ width: 32, padding: '0 4px' }}>
+                    <div onClick={() => toggleSelect(row.id)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {isSelected ? <CheckSquare size={15} color="var(--accent)" /> : <Square size={15} style={{ opacity: 0.25 }} />}
+                    </div>
                   </td>
-                ))}
-                <td>
-                  <button onClick={() => onDelete(row.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3 }} title="Delete">
-                    <Trash2 size={13} color="var(--red)" />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                  {orderedCols.map(c => (
+                    <td key={c.key} style={{ width: colWidths[c.key] || c.width }}>
+                      {c.render ? c.render(row[c.key], row) : (
+                        <EditableCell
+                          value={Array.isArray(row[c.key]) ? row[c.key].join(', ') : String(row[c.key] || '')}
+                          onChange={v => {
+                            if (c.type === 'tags' || c.key === 'assignees' || c.key === 'speakers' || c.key === 'sponsors') {
+                              onUpdate(row.id, { [c.key]: v.split(/[,;]/).map((s: string) => s.trim()).filter(Boolean) });
+                            } else if (c.key === 'week' || c.key === 'attendeeCount') {
+                              onUpdate(row.id, { [c.key]: Number(v) || 0 });
+                            } else {
+                              onUpdate(row.id, { [c.key]: v });
+                            }
+                          }}
+                          type={c.type === 'select' ? 'select' : c.type === 'date' ? 'date' : 'text'}
+                          options={c.options}
+                          placeholder={c.label}
+                        />
+                      )}
+                    </td>
+                  ))}
+                  <td>
+                    <button onClick={() => onDelete(row.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.3 }} title="Delete">
+                      <Trash2 size={13} color="var(--red)" />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
