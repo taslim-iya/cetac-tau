@@ -270,13 +270,21 @@ export const useStore = create<S>()(
       name: 'cetac-store',
       partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals, playbooks: s.playbooks, bsPartners: s.bsPartners }),
       onRehydrate: () => {
-        // After localStorage rehydration, fetch remote state and merge
+        // After localStorage rehydration, initialize missing fields and fetch remote
         setTimeout(async () => {
           try {
+            const local = useStore.getState();
+            // Backfill playbooks/bsPartners if missing from old localStorage
+            if (!local.playbooks || local.playbooks.length === 0) {
+              useStore.setState({ playbooks: DEFAULT_PLAYBOOKS });
+            }
+            if (!local.bsPartners || local.bsPartners.length === 0) {
+              useStore.setState({ bsPartners: DEFAULT_BS_PARTNERS });
+            }
             const remote = await loadRemoteState();
             if (remote) {
-              const local = useStore.getState();
-              const merged = mergeState(local as any, remote);
+              const updated = useStore.getState();
+              const merged = mergeState(updated as any, remote);
               useStore.setState(merged);
             }
           } catch {}
@@ -288,6 +296,6 @@ export const useStore = create<S>()(
 
 // Subscribe to changes and sync to remote (debounced)
 useStore.subscribe((state) => {
-  const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals } = state;
-  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals });
+  const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners } = state;
+  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners });
 });

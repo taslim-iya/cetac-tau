@@ -262,14 +262,12 @@ function BSPartnerTable({ partners, isAdmin, onUpdate }: { partners: BSPartner[]
 type Tab = 'dashboard' | 'detail' | 'bs-tracker';
 
 export default function Playbook() {
-  const { currentUser, team, playbooks, bsPartners, updatePlaybook, updateBSPartner } = useStore(s => ({
-    currentUser: s.currentUser,
-    team: s.team,
-    playbooks: s.playbooks || [],
-    bsPartners: s.bsPartners || [],
-    updatePlaybook: s.updatePlaybook,
-    updateBSPartner: s.updateBSPartner,
-  }));
+  const currentUser = useStore(s => s.currentUser);
+  const team = useStore(s => s.team);
+  const playbooks = useStore(s => s.playbooks) || [];
+  const bsPartners = useStore(s => s.bsPartners) || [];
+  const updatePlaybook = useStore(s => s.updatePlaybook);
+  const updateBSPartner = useStore(s => s.updateBSPartner);
 
   const isAdmin = currentUser?.role === 'super_admin';
   const [tab, setTab] = useState<Tab>('dashboard');
