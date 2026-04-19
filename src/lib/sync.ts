@@ -34,29 +34,24 @@ export function saveRemoteState(state: Record<string, any>) {
   }, 2000);
 }
 
-// Merge remote state with local state (remote wins for arrays, local wins for scalars)
+// Merge remote state with local state
+// REMOTE WINS for all collections — this is the shared source of truth
 export function mergeState(local: Record<string, any>, remote: Record<string, any>): Record<string, any> {
   const merged: Record<string, any> = { ...local };
   
-  // For each collection, use whichever has more items (simple heuristic)
-  // In production you'd use timestamps per-item
-  const collections = ['contacts', 'team', 'tasks', 'events', 'partnerships', 'content', 'outreach', 'calendar', 'users', 'memberTasks'];
+  const collections = ['contacts', 'team', 'tasks', 'events', 'partnerships', 'content', 'outreach', 'calendar', 'users', 'memberTasks', 'roles', 'verticals', 'playbooks', 'bsPartners'];
   
   for (const key of collections) {
-    if (remote[key] && Array.isArray(remote[key])) {
-      if (!local[key] || remote[key].length > local[key].length) {
-        merged[key] = remote[key];
-      } else {
-        // Merge: combine unique items by id
-        const localIds = new Set((local[key] as any[]).map(i => i.id));
-        const remoteOnly = (remote[key] as any[]).filter(i => !localIds.has(i.id));
-        merged[key] = [...local[key], ...remoteOnly];
-      }
+    if (remote[key] && Array.isArray(remote[key]) && remote[key].length > 0) {
+      // Remote wins — it's the shared state from Supabase
+      merged[key] = remote[key];
     }
   }
   
-  // Settings: merge
+  // Settings: remote wins
   if (remote.settings) merged.settings = { ...local.settings, ...remote.settings };
+  // Scalar values
+  if (remote.darkMode !== undefined) merged.darkMode = remote.darkMode;
   
   return merged;
 }

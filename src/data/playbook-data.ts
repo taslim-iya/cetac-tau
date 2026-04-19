@@ -1,4 +1,4 @@
-// All 23 CETAC role playbooks — real data from the Role Playbook Excel
+// All 23 CETAC role playbooks - real data from the Role Playbook Excel
 import { id } from '../lib/utils';
 
 export interface PlaybookTask { id: string; item: string; status: 'open' | 'done' | 'in_progress' | 'blocked'; notes: string; }
@@ -102,7 +102,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     notes: '', assignedTo: [],
   },
   {
-    id: id(), role: 'Partnerships Lead — Business Schools', holder: 'Vacant', reportsTo: 'VP Partnerships', deputy: 'Searchfunder Lead',
+    id: id(), role: 'Partnerships Lead - Business Schools', holder: 'Vacant', reportsTo: 'VP Partnerships', deputy: 'Searchfunder Lead',
     primaryWeeklyTarget: '5 outreach touchpoints', primaryTermKPI: 'Tier 1 MOUs: 2 (LBS, INSEAD)',
     overallStatus: 'not_started',
     dailyCadence: [t('Check LinkedIn/inbox for partner clubs'), t('1 outbound to partner club/day')],
@@ -274,7 +274,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     id: id(), role: 'Newsletter Editor', holder: 'Vacant', reportsTo: 'VP Comms', deputy: 'Marketing External',
     primaryWeeklyTarget: '1 newsletter/fortnight', primaryTermKPI: 'Newsletters sent: 4',
     overallStatus: 'not_started',
-    dailyCadence: [t('No daily cadence — fortnightly')],
+    dailyCadence: [t('No daily cadence - fortnightly')],
     weeklyCadence: [t('Committee meeting'), t('Newsletter week: write/send Fri 08:00'), t('Off-week: collect content for next issue')],
     monthlyCadence: [t('Subscriber review: joiners, churn, engagement'), t('Content format review')],
     recommendedHabits: [t('Subscribe to 3 peer club newsletters'), t('1 editorial craft piece/month')],
@@ -331,7 +331,7 @@ export const DEFAULT_BS_PARTNERS: BSPartner[] = [
   { id: id(), school: 'HEC Paris', region: 'Europe', country: 'France', clubName: 'HEC Search Fund Club', contactEmail: 'mbaclub.searchfund@hec.edu', tier: 1, relationship: 'Semi-warm', status: 'To contact', notes: 'Supports LBS/IESE ETA Conf' },
   { id: id(), school: 'Oxford Saïd', region: 'Europe', country: 'UK', clubName: 'Saïd Entrepreneurship societies', contactEmail: '', tier: 1, relationship: 'Warm (local UK)', status: 'To contact', notes: 'No dedicated ETA club yet; opportunity' },
   { id: id(), school: 'IE Business School', region: 'Europe', country: 'Spain', clubName: 'IE Search Fund Club', contactEmail: '', tier: 2, relationship: 'Cold', status: 'To contact', notes: 'Madrid-based; active SF scene' },
-  { id: id(), school: 'SDA Bocconi', region: 'Europe', country: 'Italy', clubName: 'To confirm — Bocconi MBA', contactEmail: '', tier: 2, relationship: 'Cold', status: 'To contact', notes: 'Italy SF scene is growing (Apex, Aurica)' },
+  { id: id(), school: 'SDA Bocconi', region: 'Europe', country: 'Italy', clubName: 'To confirm - Bocconi MBA', contactEmail: '', tier: 2, relationship: 'Cold', status: 'To contact', notes: 'Italy SF scene is growing (Apex, Aurica)' },
   { id: id(), school: 'ESADE Business School', region: 'Europe', country: 'Spain', clubName: 'To confirm', contactEmail: '', tier: 2, relationship: 'Cold', status: 'To contact', notes: 'Barcelona; strong entrepreneurship' },
   { id: id(), school: 'Imperial College Business School', region: 'Europe', country: 'UK', clubName: 'To confirm', contactEmail: '', tier: 2, relationship: 'Warm (local UK)', status: 'To contact', notes: 'Proximity matters for Search Day' },
   { id: id(), school: 'Rotterdam RSM', region: 'Europe', country: 'Netherlands', clubName: 'To confirm', contactEmail: '', tier: 2, relationship: 'Cold', status: 'To contact', notes: 'NL SF scene active (Ventus, Emsco)' },
