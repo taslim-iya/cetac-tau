@@ -2,6 +2,9 @@
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastSavedJson = '';
+let remoteLoaded = false; // Don't save until we've loaded remote state first
+
+export function markRemoteLoaded() { remoteLoaded = true; }
 
 export async function loadRemoteState(): Promise<Record<string, any> | null> {
   try {
@@ -15,6 +18,7 @@ export async function loadRemoteState(): Promise<Record<string, any> | null> {
 }
 
 export function saveRemoteState(state: Record<string, any>) {
+  if (!remoteLoaded) return; // Don't push local defaults before we've loaded remote
   const json = JSON.stringify(state);
   if (json === lastSavedJson) return; // No changes
   

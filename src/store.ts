@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach, Vertical, KPI } from './types';
 import { id } from './lib/utils';
-import { loadRemoteState, saveRemoteState, mergeState } from './lib/sync';
+import { loadRemoteState, saveRemoteState, mergeState, markRemoteLoaded } from './lib/sync';
 import type { RolePlaybook, BSPartner } from './data/playbook-data';
 import { DEFAULT_PLAYBOOKS, DEFAULT_BS_PARTNERS } from './data/playbook-data';
 
@@ -333,7 +333,11 @@ export const useStore = create<S>()(
               const merged = mergeState(updated as any, remote);
               useStore.setState(merged);
             }
-          } catch {}
+            // Now safe to start syncing changes back to remote
+            markRemoteLoaded();
+          } catch {
+            markRemoteLoaded(); // Even on error, allow saving
+          }
         }, 500);
       },
     }
