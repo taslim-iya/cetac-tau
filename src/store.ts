@@ -309,7 +309,7 @@ export const useStore = create<S>()(
     }),
     {
       name: 'cetac-store',
-      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals, playbooks: s.playbooks, bsPartners: s.bsPartners }),
+      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals, playbooks: s.playbooks, bsPartners: s.bsPartners, resources: (s as any).resources }),
       onRehydrate: () => {
         // After localStorage rehydration, initialize missing fields and fetch remote
         setTimeout(async () => {
@@ -347,5 +347,5 @@ export const useStore = create<S>()(
 // Subscribe to changes and sync to remote (debounced)
 useStore.subscribe((state) => {
   const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners } = state;
-  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners });
+  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners, resources: (state as any).resources });
 });
