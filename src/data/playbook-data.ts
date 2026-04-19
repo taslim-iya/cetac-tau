@@ -11,6 +11,7 @@ export interface RolePlaybook {
   dailyCadence: PlaybookTask[]; weeklyCadence: PlaybookTask[]; monthlyCadence: PlaybookTask[];
   recommendedHabits: PlaybookTask[]; weeklyTargets: PlaybookTask[]; kpis: PlaybookKPI[]; sops: PlaybookSOP[];
   notes: string;
+  assignedTo: string[]; // team member names who can view this playbook (in addition to holder)
 }
 export interface BSPartner {
   id: string; school: string; region: string; country: string; clubName: string;
@@ -33,7 +34,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('10 outreach touchpoints'), t('3 meetings'), t('1 new warm intro secured'), t('1 committee 1-on-1')],
     kpis: [k('Sponsorship secured', '£25,000'), k('Business school MOUs', '2'), k('Investor panellists', '3'), k('Advisory Board members', '3'), k('Alumni coffees', '8')],
     sops: [s('Standard email template for sponsor first contact'), s('Written agenda 48 hours before every meeting'), s('Every rejection followed by soft close for future'), s('Contacts in CRM within 24 hours')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Co-President Education', holder: 'Taslim', reportsTo: 'Committee', deputy: 'Education Coord',
@@ -46,7 +47,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('1 case study published'), t('1 office hours slot'), t('1 LinkedIn post drafted'), t('Internship standup 30 mins')],
     kpis: [k('Case studies published', '8'), k('Intern cohort', '6'), k('Co-founder intros', '3'), k('ETA Connections users', '60'), k('Events moderated', '2')],
     sops: [s('10-question interview guide used for every case study'), s('Subject reviews case study before publication'), s('Office hours advertised in newsletter'), s('Intern supervisor assignments in writing')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'VP Partnerships External', holder: 'Andres', reportsTo: 'Co-Pres Networking', deputy: 'Partnerships Lead BS',
@@ -59,7 +60,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('15 outreach emails'), t('3 meetings'), t('10 new DB contacts'), t('2 warm intros sought')],
     kpis: [k('DB size', '200 tagged contacts'), k('Premier Partners closed', '2'), k('Search Day judges', '6'), k('Investor meetings', '20'), k('Investor Panel #1', 'Delivered')],
     sops: [s('Standard email template for every outreach'), s('Contacts tagged: geography, stage, sector, temp'), s('Warm intros logged with referrer & follow-up'), s('Quarterly DB cleanse')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'VP Comms & Sponsorship', holder: 'Armaan', reportsTo: 'Co-Pres Networking', deputy: 'Marketing External',
@@ -72,7 +73,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('2 LinkedIn posts'), t('150+ engagements avg'), t('20 new followers'), t('1 newsletter/fortnight, 25% OR'), t('Increase community followers')],
     kpis: [k('LinkedIn growth', '+40%'), k('Newsletter subs', '+50'), k('Sponsor benefits on time', '100%'), k('Sponsor pack published', 'Week 1'), k('Avg post engagement', '5%')],
     sops: [s('Approved template for every LinkedIn post'), s('Written sponsor benefit checklist'), s('Newsletter Fri 08:00; list cleaned monthly'), s('No emoji, no AI-sounding vocab')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Event Manager Internal', holder: 'Vacant', reportsTo: 'VP Partnerships / VP Comms', deputy: 'Secretary',
@@ -85,7 +86,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('Every event has status (G/A/R)'), t('Pre-brief call scheduled for T-7 events')],
     kpis: [k('Events on time/budget', '100%'), k('Avg public event attendance', '40'), k('Speaker satisfaction', '4.5/5'), k('Debrief in 48 hours', '100%'), k('Venue/catering failures', '0')],
     sops: [s('Every event follows T-8 to T+2 milestones'), s('Pre-brief call is mandatory'), s('Attendees sign in (ETA Connections import)'), s('Debrief template used every time')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Event Manager External (Search Day)', holder: 'Vacant', reportsTo: 'Search Day Lead / Co-Presidents', deputy: 'Secretary',
@@ -98,7 +99,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('T-8 to T-3: vendors confirmed, attendees growing'), t('T-3 to T-0: daily updates to committee')],
     kpis: [k('Search Day delivered', '13 Jun'), k('Attendance', '100+'), k('Teams confirmed', '8'), k('Vendor failures', '0'), k('Post-event NPS', '50+')],
     sops: [s('Run-of-show by end of Week 6'), s('All vendors contracted by Week 3'), s('Rehearsal walkthrough in Week 6/7'), s('Debrief published by Week 8')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Partnerships Lead — Business Schools', holder: 'Vacant', reportsTo: 'VP Partnerships', deputy: 'Searchfunder Lead',
@@ -111,7 +112,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('5 outreach touchpoints'), t('2 partner club meetings')],
     kpis: [k('Tier 1 MOUs', '2 (LBS, INSEAD)'), k('Tier 2 MOUs', '2'), k('Search Day teams', '8 schools'), k('Joint events', '1'), k('Partner clubs tracked', '30')],
     sops: [s('Standard CETAC MOU template'), s('Named POC per partner club'), s('Written cost-sharing before joint events'), s('Annual Sept check-in with every MOU')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Marketing Officer External', holder: 'Vacant', reportsTo: 'VP Comms', deputy: 'Newsletter Editor',
@@ -124,7 +125,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('2 LI, 2 IG, 2 X, 1 YouTube/week'), t('+10 followers per channel/week'), t('1 Substack/month')],
     kpis: [k('All-channel growth', '+40%'), k('LI engagement', '5%'), k('YouTube subs', '+100'), k('Substack subs', '+30'), k('Event recap in 24 hours', '100%')],
     sops: [s('CETAC-branded template for every post'), s('Approval: drafter → VP Comms → publish'), s('Shared asset library'), s('Weekly analytics in committee folder')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Marketing Officer Internal', holder: 'Vacant', reportsTo: 'VP Comms', deputy: 'Secretary',
@@ -137,7 +138,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('1-2 WhatsApp posts max'), t('Member directory updated'), t('Mid-term survey 60% response')],
     kpis: [k('Active members', '60'), k('Event attendance rate', '50%'), k('Survey response', '60%'), k('Member churn', '<10%')],
     sops: [s('WhatsApp 1 msg/week max (unless reminder)'), s('Welcome DM to new members in 24 hours'), s('Survey questions reviewed with Co-Pres Ed')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Alumni Relations Lead', holder: 'Vacant', reportsTo: 'Co-Pres Networking', deputy: 'Cambridge Partnerships',
@@ -150,7 +151,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('3 alumni emails'), t('1 alumni meeting'), t('DB grown by 2-5 tagged contacts')],
     kpis: [k('Alumni DB', '50'), k('Advisory Board', '3'), k('Alumni receptions', '1'), k('Alumni-student intros', '5')],
     sops: [s('Alumni receptions in Cambridge or central London'), s('Advisory Board 30 mins/month in writing'), s('All outreach warm (CJBS office, LI 2nd-degree)')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Database & Research Manager', holder: 'Vacant', reportsTo: 'VP Partnerships', deputy: 'Investor Relations',
@@ -163,7 +164,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('25-50 new contacts'), t('100% tagged on core fields'), t('5 duplicates merged')],
     kpis: [k('Total contacts', '200'), k('Field completion', '85%'), k('ETA Connections integration', 'W4'), k('Data quality errors', '0')],
     sops: [s('Core fields: name, firm, role, geo, sector, stage, temp, last contact, owner'), s('Single source of truth, no parallel sheets'), s('Committee access only; view-only for interns')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Content & Case Studies Lead', holder: 'Vacant', reportsTo: 'Co-Pres Education', deputy: 'Education Coord',
@@ -176,7 +177,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('1 case published'), t('1 interview booked for next week'), t('10 outreach emails')],
     kpis: [k('Case studies', '8'), k('LI engagement per post', '5%'), k('CETAC ETA Playbook v1', 'W7'), k('Subject satisfaction', '100%')],
     sops: [s('Standard 10-Q interview guide'), s('Subject reviews draft before pub'), s('LI Mon 09:00, newsletter Fri, podcast Tue'), s('Archived in Notion + ETA Connections')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Education Programme Coordinator', holder: 'Vacant', reportsTo: 'Co-Pres Education', deputy: 'Content Lead',
@@ -189,7 +190,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('Next 4 weeks: pre-briefs scheduled/done'), t('1 speaker confirmation advanced')],
     kpis: [k('Fireside delivered', 'W5'), k('Search Day case pack', '3 weeks pre'), k('Pre-briefs on time', '100%'), k('Workshop attendance', '30 avg')],
     sops: [s('Written brief per workshop'), s('Case pack via 1 external searcher reviewer'), s('Post-workshop materials in Notion in 48h')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Sponsorship & Finance Lead', holder: 'Vacant', reportsTo: 'Co-Pres Networking', deputy: 'Secretary',
@@ -202,7 +203,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('Budget variance report'), t('Sponsor fulfilment 100% green or flagged'), t('New sponsor invoiced in 7 days')],
     kpis: [k('Sponsorship secured', '£25k'), k('Budget variance', '±10%'), k('Benefits on time', '100%'), k('Invoice issue-to-pay', '<14 days')],
     sops: [s('Written sponsor benefit checklist'), s('Invoice references contract'), s('Budget reviewed every weekly meeting'), s('Reserves need 2-CoPres signoff')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Co-Founder Networking Lead', holder: 'Vacant', reportsTo: 'Co-Pres Education', deputy: 'Education Coord',
@@ -215,7 +216,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('2 new form submissions'), t('Monthly coffee delivered'), t('3 curated intros/month')],
     kpis: [k('Matching form submissions', '30'), k('Curated intros', '10'), k('Successful pairings', '3'), k('Coffee attendance', '10 avg')],
     sops: [s('Matching form in Notion (then ETA Connections W5)'), s('Double opt-in for every intro'), s('Coffee: first Sat of month 10:00-11:30')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Searchfunder & Community Lead', holder: 'Vacant', reportsTo: 'Co-Pres Networking', deputy: 'Partnerships Lead BS',
@@ -228,7 +229,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('2 Searchfunder posts'), t('2 outbound community emails'), t('1 article pitch/month')],
     kpis: [k('Search Fund News partnership', 'W3'), k('Articles in ETA media', '2'), k('Searchfunder engagement', '15/post avg'), k('External community contacts', '20')],
     sops: [s('Every pitch reviewed by VP Comms'), s('CETAC voice: plain, no jargon'), s('SFN partnership deliverables tracked separately')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Cambridge Partnerships Lead', holder: 'Vacant', reportsTo: 'Co-Pres Networking', deputy: 'Alumni Relations',
@@ -241,7 +242,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('1 partner contact advanced'), t('Monthly 1 partner meeting')],
     kpis: [k('Joint event with Cambridge club', '1'), k('CJBS Ent Centre link', 'End of term'), k('Faculty endorsements', '2'), k('Listed in CJBS careers', 'Yes')],
     sops: [s('Named POC per partner'), s('Signed MOU per joint event (lightweight OK)'), s('Sync with Alumni Relations monthly')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Website & Digital Lead', holder: 'Vacant', reportsTo: 'VP Comms', deputy: 'Marketing External',
@@ -254,7 +255,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('1 site update'), t('0 broken links'), t('Calendar 100% current')],
     kpis: [k('Uptime', '99%+'), k('Monthly visitors', '500'), k('Case studies archived', '100%'), k('ETA Connections integration', 'W4')],
     sops: [s('New event on site in 24 hours of confirm'), s('Cases cross-posted to Notion + ETA Connections'), s('Site backup every Sunday')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Competition & Search Day Lead', holder: 'Vacant', reportsTo: 'Co-Presidents', deputy: 'Event Mgr External',
@@ -267,7 +268,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('T-8 to T-3: case pack progressing, judges advancing'), t('T-3 to T-0: daily committee updates')],
     kpis: [k('Search Day delivered', '13 Jun'), k('8 teams by W4', 'Yes'), k('6 judges by W5', 'Yes'), k('Case pack published', 'W4'), k('Debrief published', 'W8')],
     sops: [s('Case pack via external searcher review'), s('Judges brief W6, pre-brief call W7'), s('Competition rules signed by every team'), s('Debrief to committee W8')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Newsletter Editor', holder: 'Vacant', reportsTo: 'VP Comms', deputy: 'Marketing External',
@@ -280,7 +281,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('1 newsletter/fortnight'), t('25%+ OR'), t('+25 subs/month')],
     kpis: [k('Newsletters sent', '4'), k('Subs growth', '+50'), k('Open rate', '25%+'), k('Sections per issue', '3')],
     sops: [s('Standard CETAC template'), s('Content by Wed, send Fri 08:00'), s('List cleaned monthly; unsubs in 24 hours')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Investor Relations Associate', holder: 'Vacant', reportsTo: 'VP Partnerships', deputy: 'Database Manager',
@@ -293,7 +294,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('3 new contacts sourced'), t('100% follow-ups in 48 hours'), t('1 investor meeting attended/scheduled')],
     kpis: [k('Investor tracker', '100'), k('New investor meetings', '20'), k('Warm-route Tier 1', '100%'), k('Search Day judges sourced', '3')],
     sops: [s('Written agenda 48 hours before every meeting'), s('Written follow-up in 48 hours'), s('Tracker updated same-day')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Secretary / Operations Lead', holder: 'Vacant', reportsTo: 'Co-Presidents', deputy: 'Sponsorship & Finance',
@@ -306,7 +307,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('Notes within 24 hours'), t('Action tracker updated')],
     kpis: [k('Notes on time', '100%'), k('CUSU/CJBS compliance', '100%'), k('Handover pack', 'W7'), k('Budget variance on time', '100%')],
     sops: [s('Notes template: attendees, decisions, actions, owners, deadlines'), s('Constitution/filings in shared drive, RO'), s('Handover pack template for term end')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
   {
     id: id(), role: 'Press & Media Lead', holder: 'Incoming MBA', reportsTo: 'VP Comms', deputy: 'Searchfunder Lead',
@@ -319,7 +320,7 @@ export const DEFAULT_PLAYBOOKS: RolePlaybook[] = [
     weeklyTargets: [t('1 media pitch/week'), t('1 contributed article/month'), t('1 podcast appearance/month')],
     kpis: [k('SFN partnership', 'W3'), k('Contributed articles', '2'), k('Podcast appearances', '1'), k('CETAC press mentions', '5'), k('Target outlets mapped', '20+')],
     sops: [s('Every pitch via VP Comms before send'), s('Every article links back to site + ETA Connections'), s('SFN partnership deliverables weekly')],
-    notes: '',
+    notes: '', assignedTo: [],
   },
 ];
 
