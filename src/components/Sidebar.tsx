@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut, BarChart3, BookMarked } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut, BarChart3, BookMarked, Link2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { getUserModules, ROUTE_MODULES } from '../lib/permissions';
@@ -23,6 +23,7 @@ const nav = [
   { path: '/content', icon: BookOpen, label: 'Content' },
   { path: '/outreach', icon: Send, label: 'Outreach' },
   { path: '/templates', icon: Mail, label: 'Templates' },
+  { path: '/resources', icon: Link2, label: 'Resources' },
   { path: '/search-day', icon: Trophy, label: 'Search Day' },
   { path: '/chat', icon: MessageSquare, label: 'AI Chat' },
   { path: '/import', icon: Upload, label: 'Import' },

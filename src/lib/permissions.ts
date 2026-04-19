@@ -22,6 +22,7 @@ export const MODULE_ROUTES: Record<string, string> = {
   teamPortal: '/team-portal',
   team: '/team',
   playbook: '/playbook',
+  resources: '/resources',
 };
 
 // Reverse: route path → module key
@@ -37,8 +38,8 @@ export const ROLE_PRESETS: Record<string, string[]> = {
   'VP Operations': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'roles', 'teamPortal', 'export', 'import', 'team', 'kpi', 'memberTasks', 'playbook'],
   'VP Administration & Events': ['dashboard', 'plan', 'calendar', 'events', 'searchDay', 'tasks', 'export', 'team', 'kpi', 'playbook'],
   'VP Community': ['dashboard', 'plan', 'calendar', 'crm', 'content', 'outreach', 'templates', 'team', 'kpi', 'playbook'],
-  'Member': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'chat', 'memberTasks', 'playbook'],
-  'Potential Member': ['dashboard', 'plan', 'calendar'],
+  'Member': ['resources', 'dashboard', 'plan', 'calendar', 'tasks', 'events', 'chat', 'memberTasks', 'playbook'],
+  'Potential Member': ['resources', 'dashboard', 'plan', 'calendar'],
 };
 
 /**
