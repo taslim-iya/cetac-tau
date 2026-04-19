@@ -135,10 +135,51 @@ const ROLE_PERMS: Record<string, Record<string, 'edit' | 'view'>> = {
 };
 
 export function permsForRole(role: string): Record<string, 'edit' | 'view'> {
+  // Exact match first
   if (ROLE_PERMS[role]) return ROLE_PERMS[role];
-  if (role.startsWith('VP')) return ROLE_PERMS['Member'];
-  if (role.includes('Potential')) return ROLE_PERMS['Potential Member'];
-  return ROLE_PERMS['Member'];
+  
+  // Multi-role: split by comma and merge permissions (highest access wins)
+  const roles = role.split(',').map(r => r.trim()).filter(Boolean);
+  if (roles.length > 1) {
+    const merged: Record<string, 'edit' | 'view'> = {};
+    for (const r of roles) {
+      const p = permsForRole(r);
+      for (const [k, v] of Object.entries(p)) {
+        if (!merged[k] || v === 'edit') merged[k] = v;
+      }
+    }
+    return merged;
+  }
+  
+  // Smart keyword matching for unknown roles
+  const lower = role.toLowerCase();
+  if (lower.includes('president') || lower.includes('co-president') || lower.includes('chair') || lower.includes('director')) {
+    return ROLE_PERMS['President'] || {};
+  }
+  if (lower.includes('vp') || lower.includes('vice president') || lower.includes('head of')) {
+    // Determine which VP based on keywords
+    if (lower.includes('partner') || lower.includes('external') || lower.includes('business dev')) return ROLE_PERMS['VP Partnerships - External'] || ROLE_PERMS['Member'];
+    if (lower.includes('comms') || lower.includes('communic') || lower.includes('sponsor') || lower.includes('marketing') || lower.includes('brand')) return ROLE_PERMS['VP Communications & Sponsorship'] || ROLE_PERMS['Member'];
+    if (lower.includes('ops') || lower.includes('operation')) return ROLE_PERMS['VP Operations'] || ROLE_PERMS['Member'];
+    if (lower.includes('admin') || lower.includes('event')) return ROLE_PERMS['VP Administration & Events'] || ROLE_PERMS['Member'];
+    if (lower.includes('community') || lower.includes('social') || lower.includes('engagement')) return ROLE_PERMS['VP Community'] || ROLE_PERMS['Member'];
+    // Generic VP: give broad access
+    return { dashboard: 'edit', plan: 'edit', calendar: 'edit', tasks: 'edit', events: 'view', crm: 'view', content: 'view', outreach: 'view', team: 'view', kpi: 'view', playbook: 'edit', export: 'view', memberTasks: 'edit' } as any;
+  }
+  if (lower.includes('treasurer') || lower.includes('finance')) {
+    return { dashboard: 'edit', plan: 'view', calendar: 'view', sponsors: 'edit', kpi: 'edit', export: 'edit', settings: 'edit', playbook: 'edit' } as any;
+  }
+  if (lower.includes('secretary') || lower.includes('clerk')) {
+    return { dashboard: 'edit', plan: 'edit', calendar: 'edit', tasks: 'edit', events: 'edit', team: 'view', export: 'edit', import: 'edit', playbook: 'edit' } as any;
+  }
+  if (lower.includes('intern') || lower.includes('potential') || lower.includes('prospect') || lower.includes('applicant')) {
+    return ROLE_PERMS['Potential Member'] || { dashboard: 'view', plan: 'view', calendar: 'view' };
+  }
+  if (lower.includes('officer') || lower.includes('lead') || lower.includes('manager') || lower.includes('coordinator')) {
+    return { dashboard: 'edit', plan: 'view', calendar: 'edit', tasks: 'edit', events: 'view', crm: 'view', content: 'view', outreach: 'view', kpi: 'view', playbook: 'edit', memberTasks: 'edit' } as any;
+  }
+  
+  return ROLE_PERMS['Member'] || { dashboard: 'view', plan: 'view', calendar: 'view', tasks: 'view', events: 'view', chat: 'view', memberTasks: 'view', playbook: 'view' };
 }
 
 const DEFAULT_USERS: CETACUser[] = [

@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
-import { Shield, Eye, EyeOff, Check, User, Crown, Settings as SettingsIcon, ChevronDown, ChevronUp, Save } from 'lucide-react';
+import { Shield, Eye, EyeOff, Check, User, Crown, Settings as SettingsIcon, ChevronDown, ChevronUp, Save, Wand2 } from 'lucide-react';
 import EditableCell from '../components/EditableCell';
 import { useStore } from '../store';
 import { id } from '../lib/utils';
+import { autoModulesForRole } from '../lib/permissions';
 
 // Permission modules
 const MODULES = [
@@ -124,9 +125,20 @@ export default function TeamPortal() {
           <h1 style={{ fontSize: 22, fontWeight: 700 }}>Team Portal</h1>
           <p style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 2 }}>Manage individual access and permissions</p>
         </div>
-        <button onClick={saveAccess} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: 'none', borderRadius: 6, background: saved ? 'var(--green)' : 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}>
-          {saved ? <Check size={14} /> : <Save size={14} />} {saved ? 'Saved!' : 'Save Permissions'}
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => {
+            setAccessList(prev => prev.map(a => {
+              const member = team.find(m => m.id === a.memberId);
+              if (!member) return a;
+              return { ...a, permissions: autoModulesForRole(member.role) };
+            }));
+          }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--bg)', color: 'var(--text)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+            <Wand2 size={14} /> Auto-assign All
+          </button>
+          <button onClick={saveAccess} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: 'none', borderRadius: 6, background: saved ? 'var(--green)' : 'var(--accent)', color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'background 0.2s' }}>
+            {saved ? <Check size={14} /> : <Save size={14} />} {saved ? 'Saved!' : 'Save Permissions'}
+          </button>
+        </div>
       </div>
 
       {/* Account Management */}
@@ -293,6 +305,12 @@ export default function TeamPortal() {
                   {Object.keys(ROLE_PRESETS).map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
 
+                <button onClick={() => {
+                  const autoPerms = autoModulesForRole(selected.role);
+                  setAccessList(prev => prev.map(a => a.memberId === selected.id ? { ...a, permissions: autoPerms } : a));
+                }} style={{ ...quickBtn, background: 'var(--accent)', color: '#fff', border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Wand2 size={11} /> Auto
+                </button>
                 <button onClick={() => selectAll(selected.id)} style={quickBtn}>All</button>
                 <button onClick={() => selectNone(selected.id)} style={quickBtn}>None</button>
               </div>

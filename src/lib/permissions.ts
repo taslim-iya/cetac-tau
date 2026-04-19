@@ -83,6 +83,65 @@ export function canAccessRoute(path: string, allowedModules: string[]): boolean 
   return allowedModules.includes(moduleKey);
 }
 
+/**
+ * AI-style auto-assign: given a role string, determine which modules they should access.
+ * Uses keyword matching (no API call needed).
+ */
+export function autoModulesForRole(role: string): string[] {
+  // Check presets first
+  const roles = role.split(',').map(r => r.trim()).filter(Boolean);
+  const allModules = new Set<string>();
+  
+  for (const r of roles) {
+    if (ROLE_PRESETS[r]) {
+      ROLE_PRESETS[r].forEach(m => allModules.add(m));
+      continue;
+    }
+    
+    const lower = r.toLowerCase();
+    
+    if (lower.includes('president') || lower.includes('co-president') || lower.includes('chair') || lower.includes('director')) {
+      Object.keys(MODULE_ROUTES).forEach(m => allModules.add(m));
+      continue;
+    }
+    
+    // Always give basics
+    ['dashboard', 'plan', 'calendar', 'playbook', 'resources'].forEach(m => allModules.add(m));
+    
+    if (lower.includes('vp') || lower.includes('vice president') || lower.includes('head of')) {
+      ['tasks', 'events', 'team', 'kpi', 'memberTasks', 'export'].forEach(m => allModules.add(m));
+      if (lower.includes('partner') || lower.includes('external') || lower.includes('business')) ['partnerships', 'sponsors', 'crm', 'outreach', 'templates', 'searchDay'].forEach(m => allModules.add(m));
+      if (lower.includes('comms') || lower.includes('communic') || lower.includes('marketing') || lower.includes('brand') || lower.includes('sponsor')) ['content', 'outreach', 'templates', 'crm', 'sponsors'].forEach(m => allModules.add(m));
+      if (lower.includes('ops') || lower.includes('operation')) ['tasks', 'events', 'roles', 'teamPortal', 'import'].forEach(m => allModules.add(m));
+      if (lower.includes('admin') || lower.includes('event')) ['events', 'searchDay', 'tasks'].forEach(m => allModules.add(m));
+      if (lower.includes('community') || lower.includes('social')) ['crm', 'content', 'outreach', 'templates'].forEach(m => allModules.add(m));
+      continue;
+    }
+    
+    if (lower.includes('treasurer') || lower.includes('finance')) {
+      ['sponsors', 'kpi', 'export', 'settings'].forEach(m => allModules.add(m));
+      continue;
+    }
+    if (lower.includes('secretary') || lower.includes('clerk')) {
+      ['tasks', 'events', 'team', 'export', 'import'].forEach(m => allModules.add(m));
+      continue;
+    }
+    if (lower.includes('officer') || lower.includes('lead') || lower.includes('manager') || lower.includes('coordinator')) {
+      ['tasks', 'events', 'crm', 'content', 'outreach', 'kpi', 'memberTasks'].forEach(m => allModules.add(m));
+      continue;
+    }
+    if (lower.includes('intern') || lower.includes('potential') || lower.includes('prospect')) {
+      // Just basics (already added above)
+      continue;
+    }
+    
+    // Default member
+    ['tasks', 'events', 'chat', 'memberTasks'].forEach(m => allModules.add(m));
+  }
+  
+  return [...allModules];
+}
+
 export function canAccessPath(path: string, allowedModules: string[]): boolean {
   // Check exact match first
   if (ROUTE_MODULES[path] !== undefined) {
