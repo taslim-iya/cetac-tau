@@ -236,16 +236,40 @@ export const useStore = create<S>()(
       },
       update: (key, itemId, updates) => set(s => {
         const result: any = { [key]: (s as any)[key].map((i: any) => i.id === itemId ? { ...i, ...updates } : i) };
-        // Auto-update user permissions when team member role changes
-        if (key === 'team' && updates.role) {
+        if (key === 'team') {
           const member = s.team.find(m => m.id === itemId);
           if (member) {
-            result.users = s.users.map(u => {
-              if (u.name === member.name || u.teamMemberId === itemId) {
-                return { ...u, permissions: permsForRole(updates.role), role: updates.role === 'President' ? 'super_admin' as const : 'team_member' as const };
-              }
-              return u;
-            });
+            // Auto-update user permissions when team member role changes
+            if (updates.role) {
+              result.users = s.users.map(u => {
+                if (u.name === member.name || u.teamMemberId === itemId) {
+                  return { ...u, permissions: permsForRole(updates.role), role: updates.role === 'President' ? 'super_admin' as const : 'team_member' as const };
+                }
+                return u;
+              });
+            }
+            // Sync name changes across playbooks, users, assignedTo, tasks, memberTasks
+            if (updates.name && updates.name !== member.name) {
+              const oldName = member.name;
+              const newName = updates.name;
+              result.playbooks = (result.playbooks || s.playbooks).map((p: any) => ({
+                ...p,
+                holder: p.holder === oldName ? newName : p.holder,
+                assignedTo: (p.assignedTo || []).map((n: string) => n === oldName ? newName : n),
+              }));
+              result.users = (result.users || s.users).map((u: any) => u.teamMemberId === itemId || u.name === oldName ? { ...u, name: newName } : u);
+              result.tasks = s.tasks.map((t: any) => ({ ...t, assignedTo: t.assignedTo === oldName ? newName : t.assignedTo }));
+              result.memberTasks = s.memberTasks.map((t: any) => ({ ...t, assignedTo: t.assignedTo === oldName ? newName : t.assignedTo }));
+            }
+            // Sync role changes to playbook holder's role label
+            if (updates.role && updates.role !== member.role) {
+              result.playbooks = (result.playbooks || s.playbooks).map((p: any) => {
+                if (p.holder === member.name || (updates.name && p.holder === updates.name)) {
+                  return p; // holder stays the person's name, not the role title
+                }
+                return p;
+              });
+            }
           }
         }
         return result;
@@ -263,7 +287,24 @@ export const useStore = create<S>()(
       addVertical: (v) => set(s => ({ verticals: [...s.verticals, { ...v, id: id(), createdAt: new Date().toISOString() }] })),
       updateVertical: (vId, updates) => set(s => ({ verticals: s.verticals.map(v => v.id === vId ? { ...v, ...updates } : v) })),
       removeVertical: (vId) => set(s => ({ verticals: s.verticals.filter(v => v.id !== vId) })),
-      updatePlaybook: (playbookId, updates) => set(s => ({ playbooks: s.playbooks.map(p => p.id === playbookId ? { ...p, ...updates } : p) })),
+      updatePlaybook: (playbookId, updates) => set(s => {
+        const result: any = { playbooks: s.playbooks.map(p => p.id === playbookId ? { ...p, ...updates } : p) };
+        // When holder changes, update the corresponding team member's role to match playbook role
+        if (updates.holder) {
+          const pb = s.playbooks.find(p => p.id === playbookId);
+          if (pb) {
+            const teamMember = s.team.find(m => m.name === updates.holder);
+            if (teamMember && teamMember.role !== pb.role) {
+              result.team = s.team.map(m => m.id === teamMember.id ? { ...m, role: pb.role } : m);
+              // Also update user perms
+              result.users = s.users.map(u => u.name === updates.holder || u.teamMemberId === teamMember.id
+                ? { ...u, permissions: permsForRole(pb.role), role: pb.role === 'President' ? 'super_admin' as const : 'team_member' as const }
+                : u);
+            }
+          }
+        }
+        return result;
+      }),
       updateBSPartner: (partnerId, updates) => set(s => ({ bsPartners: s.bsPartners.map(p => p.id === partnerId ? { ...p, ...updates } : p) })),
     }),
     {
@@ -274,9 +315,14 @@ export const useStore = create<S>()(
         setTimeout(async () => {
           try {
             const local = useStore.getState();
-            // Backfill playbooks/bsPartners if missing from old localStorage
+            // Backfill playbooks/bsPartners — merge new defaults into existing without wiping
             if (!local.playbooks || local.playbooks.length === 0) {
               useStore.setState({ playbooks: DEFAULT_PLAYBOOKS });
+            } else {
+              const existingIds = new Set(local.playbooks.map((p: any) => p.id));
+              const newPbs = DEFAULT_PLAYBOOKS.filter(p => !existingIds.has(p.id));
+              const patched = local.playbooks.map((p: any) => p.assignedTo ? p : { ...p, assignedTo: [] });
+              useStore.setState({ playbooks: newPbs.length > 0 ? [...patched, ...newPbs] : patched });
             }
             if (!local.bsPartners || local.bsPartners.length === 0) {
               useStore.setState({ bsPartners: DEFAULT_BS_PARTNERS });
