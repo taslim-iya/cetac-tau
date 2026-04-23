@@ -26,6 +26,7 @@ interface S {
   updateMemberTask: (taskId: string, updates: Partial<MemberTask>) => void;
   removeMemberTask: (taskId: string) => void;
   addUser: (user: Omit<CETACUser, 'id'>) => void;
+  updateUser: (userId: string, updates: Partial<CETACUser>) => void;
   removeUser: (userId: string) => void;
   addRole: (role: string) => void;
   removeRole: (role: string) => void;
@@ -298,7 +299,7 @@ export const useStore = create<S>()(
                 holder: p.holder === oldName ? newName : p.holder,
                 assignedTo: (p.assignedTo || []).map((n: string) => n === oldName ? newName : n),
               }));
-              result.users = (result.users || s.users).map((u: any) => u.teamMemberId === itemId || u.name === oldName ? { ...u, name: newName } : u);
+              result.users = (result.users || s.users).map((u: any) => u.teamMemberId === itemId || u.name === oldName ? { ...u, name: newName, email: makeEmail(newName), password: makePassword(newName) } : u);
               result.tasks = s.tasks.map((t: any) => ({ ...t, assignedTo: t.assignedTo === oldName ? newName : t.assignedTo }));
               result.memberTasks = s.memberTasks.map((t: any) => ({ ...t, assignedTo: t.assignedTo === oldName ? newName : t.assignedTo }));
             }
@@ -322,6 +323,7 @@ export const useStore = create<S>()(
       updateMemberTask: (taskId, updates) => set(s => ({ memberTasks: s.memberTasks.map(t => t.id === taskId ? { ...t, ...updates } : t) })),
       removeMemberTask: (taskId) => set(s => ({ memberTasks: s.memberTasks.filter(t => t.id !== taskId) })),
       addUser: (user) => set(s => ({ users: [...s.users, { ...user, id: id() }] })),
+      updateUser: (userId, updates) => set(s => ({ users: s.users.map(u => u.id === userId ? { ...u, ...updates } : u) })),
       removeUser: (userId) => set(s => ({ users: s.users.filter(u => u.id !== userId) })),
       addRole: (role) => set(s => s.roles.includes(role) ? {} : { roles: [...s.roles, role] }),
       removeRole: (role) => set(s => ({ roles: s.roles.filter(r => r !== role) })),

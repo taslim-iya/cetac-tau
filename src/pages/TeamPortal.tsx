@@ -51,7 +51,7 @@ interface MemberAccess {
 }
 
 export default function TeamPortal() {
-  const { team, update, users, addUser, removeUser } = useStore();
+  const { team, update, users, addUser, updateUser, removeUser } = useStore();
   const [accessList, setAccessList] = useState<MemberAccess[]>(() => {
     const saved = localStorage.getItem('cetac-access');
     if (saved) return JSON.parse(saved);
@@ -190,30 +190,35 @@ export default function TeamPortal() {
           </div>
         )}
 
-        {/* Existing accounts list */}
+        {/* Existing accounts list — editable */}
         <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {users.map(u => (
-            <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 3, background: 'var(--bg-2)', fontSize: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 600, minWidth: 80 }}>{u.name}</span>
-                <span style={{ color: 'var(--text-3)', minWidth: 180 }}>{u.email}</span>
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 10px', borderRadius: 3, background: 'var(--bg-2)', fontSize: 12, gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, flexWrap: 'wrap' }}>
+                <input value={u.name} onChange={e => updateUser(u.id, { name: e.target.value })}
+                  style={{ fontWeight: 600, minWidth: 80, width: 100, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 12, background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--sans)' }} />
+                <input value={u.email} onChange={e => updateUser(u.id, { email: e.target.value })}
+                  style={{ minWidth: 180, width: 220, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 12, background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--sans)' }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span style={{ fontSize: 10, color: 'var(--text-3)', fontWeight: 600 }}>pw:</span>
-                  <code style={{ fontSize: 11, background: 'var(--bg)', padding: '1px 6px', borderRadius: 2, color: 'var(--text)', fontFamily: 'monospace', letterSpacing: '0.03em' }}>{u.password}</code>
+                  <input value={u.password} onChange={e => updateUser(u.id, { password: e.target.value })}
+                    style={{ width: 120, padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 11, background: 'var(--bg)', color: 'var(--text)', fontFamily: 'monospace', letterSpacing: '0.03em' }} />
                 </div>
-                <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 2, background: u.role === 'super_admin' ? 'var(--gold-light)' : 'var(--blue-light)', color: u.role === 'super_admin' ? 'var(--gold)' : 'var(--blue)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  {u.role === 'super_admin' ? 'Admin' : 'Member'}
-                </span>
+                <select value={u.role} onChange={e => updateUser(u.id, { role: e.target.value as any })}
+                  style={{ padding: '3px 6px', border: '1px solid var(--border)', borderRadius: 3, fontSize: 10, background: u.role === 'super_admin' ? 'var(--gold-light)' : 'var(--blue-light)', color: u.role === 'super_admin' ? 'var(--gold)' : 'var(--blue)', fontWeight: 600, textTransform: 'uppercase' }}>
+                  <option value="super_admin">Admin</option>
+                  <option value="team_member">Member</option>
+                </select>
               </div>
               {u.email !== 'admin@etacambridge.co.uk' && (
-                <button onClick={() => removeUser(u.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--red)' }}>Remove</button>
+                <button onClick={() => removeUser(u.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--red)', whiteSpace: 'nowrap' }}>Remove</button>
               )}
             </div>
           ))}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
+      <div className="team-portal-grid" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 16 }}>
         {/* Member list */}
         <div style={{ border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
           <div style={{ padding: '10px 14px', background: 'var(--bg-2)', borderBottom: '1px solid var(--border)', fontSize: 12, fontWeight: 700, color: 'var(--text-2)' }}>

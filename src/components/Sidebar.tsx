@@ -1,9 +1,9 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut, BarChart3, BookMarked, Link2 } from 'lucide-react';
+import { LayoutDashboard, Users, CheckSquare, Calendar, Handshake, BookOpen, Send, MessageSquare, Settings, Target, Upload, Download, Award, Trophy, UserPlus, Mail, Moon, Sun, Shield, ClipboardList, LogOut, BarChart3, BookMarked, Link2, Menu, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store';
 import { getUserModules, ROUTE_MODULES } from '../lib/permissions';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import Notifications from './Notifications';
 
 const nav = [
@@ -42,6 +42,7 @@ const mobileNav = [
 export default function Sidebar() {
   const loc = useLocation();
   const { darkMode, toggleDarkMode, currentUser, logout, team } = useStore();
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const allowedModules = useMemo(() => {
     if (!currentUser) return [];
@@ -112,7 +113,7 @@ export default function Sidebar() {
 
       {/* Mobile bottom nav */}
       <nav className="mobile-nav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--bg)', borderTop: '1px solid var(--border)', zIndex: 100, justifyContent: 'space-around', padding: '8px 0 max(8px, env(safe-area-inset-bottom))' }}>
-        {filteredMobileNav.map(({ path, icon: Icon, label }) => {
+        {filteredMobileNav.slice(0, 4).map(({ path, icon: Icon, label }) => {
           const active = path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path);
           return (
             <NavLink key={path} to={path} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none', padding: '4px 12px' }}>
@@ -121,7 +122,56 @@ export default function Sidebar() {
             </NavLink>
           );
         })}
+        <button onClick={() => setMoreOpen(!moreOpen)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', padding: '4px 12px', cursor: 'pointer' }}>
+          <Menu size={20} strokeWidth={1.5} color={moreOpen ? 'var(--text)' : 'var(--text-3)'} />
+          <span style={{ fontSize: 9, fontWeight: moreOpen ? 700 : 500, color: moreOpen ? 'var(--text)' : 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>More</span>
+        </button>
       </nav>
+
+      {/* Mobile "More" slide-up menu */}
+      {moreOpen && (
+        <div className="mobile-nav" style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex !important', flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <div style={{ flex: 1 }} onClick={() => setMoreOpen(false)} />
+          <div style={{ background: 'var(--bg)', borderTop: '1px solid var(--border)', borderRadius: '16px 16px 0 0', maxHeight: '70vh', overflowY: 'auto', padding: '12px 0 max(12px, env(safe-area-inset-bottom))' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 20px 12px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, fontFamily: 'var(--serif)' }}>All Pages</span>
+              <button onClick={() => setMoreOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <X size={18} color="var(--text-3)" />
+              </button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2, padding: '8px 12px' }}>
+              {filteredNav.map(({ path, icon: Icon, label }) => {
+                const active = path === '/' ? loc.pathname === '/' : loc.pathname.startsWith(path);
+                return (
+                  <NavLink key={path} to={path} onClick={() => setMoreOpen(false)}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 8, textDecoration: 'none', background: active ? 'var(--accent-light)' : 'transparent' }}>
+                    <Icon size={20} strokeWidth={1.5} color={active ? 'var(--accent)' : 'var(--text-2)'} />
+                    <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text-2)', textAlign: 'center', lineHeight: 1.2 }}>{label}</span>
+                  </NavLink>
+                );
+              })}
+              <NavLink to="/settings" onClick={() => setMoreOpen(false)}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '14px 8px', borderRadius: 8, textDecoration: 'none', background: loc.pathname === '/settings' ? 'var(--accent-light)' : 'transparent' }}>
+                <Settings size={20} strokeWidth={1.5} color={loc.pathname === '/settings' ? 'var(--accent)' : 'var(--text-2)'} />
+                <span style={{ fontSize: 10, fontWeight: loc.pathname === '/settings' ? 700 : 500, color: loc.pathname === '/settings' ? 'var(--accent)' : 'var(--text-2)', textAlign: 'center' }}>Settings</span>
+              </NavLink>
+            </div>
+            <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button onClick={toggleDarkMode} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--text-2)', fontFamily: 'var(--sans)' }}>
+                {darkMode ? <Sun size={14} /> : <Moon size={14} />} {darkMode ? 'Light Mode' : 'Dark Mode'}
+              </button>
+              <button onClick={() => { logout(); setMoreOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--red)', fontFamily: 'var(--sans)' }}>
+                <LogOut size={14} /> Sign Out
+              </button>
+            </div>
+            {currentUser && (
+              <div style={{ padding: '4px 16px', fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                {currentUser.name} · {currentUser.role === 'super_admin' ? 'Admin' : 'Member'}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
