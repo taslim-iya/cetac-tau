@@ -329,14 +329,27 @@ export default function Playbook() {
   // Check if user is holder or assigned to a playbook
   const isHolderOf = (pb: RolePlaybook) => pb.holder.toLowerCase() === myName.toLowerCase();
   const isAssignedTo = (pb: RolePlaybook) => (pb.assignedTo || []).some(n => n.toLowerCase() === myName.toLowerCase());
-  const canAccess = (pb: RolePlaybook) => isAdmin || isHolderOf(pb) || isAssignedTo(pb);
+  
+  // Auto-match: if team member's role contains keywords from the playbook role name
+  const isRoleMatch = (pb: RolePlaybook) => {
+    if (!myName) return false;
+    const myTeam = team.find(m => m.name.toLowerCase() === myName.toLowerCase());
+    if (!myTeam) return false;
+    const myRoles = (myTeam.role || '').toLowerCase();
+    const pbRole = pb.role.toLowerCase();
+    // Match if member role keywords overlap with playbook role
+    const pbWords = pbRole.split(/[\s\/&,\-–]+/).filter(w => w.length > 2 && !['and','the','for','lead'].includes(w));
+    return pbWords.some(w => myRoles.includes(w)) || myRoles.includes(pbRole.slice(0, 15));
+  };
+  
+  const canAccess = (pb: RolePlaybook) => isAdmin || isHolderOf(pb) || isAssignedTo(pb) || isRoleMatch(pb);
   const canEditPb = (pb: RolePlaybook) => isAdmin || isHolderOf(pb); // Admin or holder can edit
 
   // Visible playbooks for this user
   const visiblePlaybooks = useMemo(() => {
     if (isAdmin) return playbooks;
     return playbooks.filter(pb => canAccess(pb));
-  }, [isAdmin, playbooks, myName]);
+  }, [isAdmin, playbooks, myName, team]);
 
   const selectedPlaybook = playbooks.find(p => p.id === selectedRoleId);
 
