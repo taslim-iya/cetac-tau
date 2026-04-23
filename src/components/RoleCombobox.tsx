@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
+import { useStore } from '../store';
+import { generatePlaybookForRole } from '../lib/ai-role';
 
 interface Props {
   value: string; // comma-separated roles e.g. "President, VP Operations"
@@ -20,8 +22,10 @@ export default function RoleCombobox({ value, roles, onChange }: Props) {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
   const [focused, setFocused] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { addRole: storeAddRole, addPlaybook, playbooks } = useStore();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -38,9 +42,23 @@ export default function RoleCombobox({ value, roles, onChange }: Props) {
     return () => document.removeEventListener('mousedown', handler);
   }, [input, currentRoles]);
 
-  const addRole = (role: string) => {
+  const addRole = async (role: string) => {
     if (!role || currentRoles.includes(role)) return;
     onChange(joinRoles([...currentRoles, role]));
+    
+    // If it's a brand new role, add to global list and generate a playbook
+    if (!roles.includes(role)) {
+      storeAddRole(role);
+      const hasPlaybook = playbooks.some(p => p.role.toLowerCase() === role.toLowerCase());
+      if (!hasPlaybook) {
+        setGenerating(true);
+        try {
+          const pb = await generatePlaybookForRole(role);
+          addPlaybook(pb);
+        } catch (e) { console.error('Failed to generate playbook:', e); }
+        setGenerating(false);
+      }
+    }
   };
 
   const removeRole = (role: string) => {
@@ -66,6 +84,7 @@ export default function RoleCombobox({ value, roles, onChange }: Props) {
           cursor: 'text', transition: 'all 0.15s',
         }}
       >
+        {generating && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite', color: 'var(--accent)' }} />}
         {currentRoles.map(role => (
           <span
             key={role}

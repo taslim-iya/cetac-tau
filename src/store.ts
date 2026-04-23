@@ -36,6 +36,7 @@ interface S {
   playbooks: RolePlaybook[];
   bsPartners: BSPartner[];
   updatePlaybook: (playbookId: string, updates: Partial<RolePlaybook>) => void;
+  addPlaybook: (playbook: RolePlaybook) => void;
   updateBSPartner: (partnerId: string, updates: Partial<BSPartner>) => void;
 }
 
@@ -325,7 +326,10 @@ export const useStore = create<S>()(
       addUser: (user) => set(s => ({ users: [...s.users, { ...user, id: id() }] })),
       updateUser: (userId, updates) => set(s => ({ users: s.users.map(u => u.id === userId ? { ...u, ...updates } : u) })),
       removeUser: (userId) => set(s => ({ users: s.users.filter(u => u.id !== userId) })),
-      addRole: (role) => set(s => s.roles.includes(role) ? {} : { roles: [...s.roles, role] }),
+      addRole: (role) => set(s => {
+        if (s.roles.includes(role)) return {};
+        return { roles: [...s.roles, role] };
+      }),
       removeRole: (role) => set(s => ({ roles: s.roles.filter(r => r !== role) })),
       addVertical: (v) => set(s => ({ verticals: [...s.verticals, { ...v, id: id(), createdAt: new Date().toISOString() }] })),
       updateVertical: (vId, updates) => set(s => ({ verticals: s.verticals.map(v => v.id === vId ? { ...v, ...updates } : v) })),
@@ -347,6 +351,11 @@ export const useStore = create<S>()(
           }
         }
         return result;
+      }),
+      addPlaybook: (playbook) => set(s => {
+        // Don't add if one with same role already exists
+        if (s.playbooks.some(p => p.role.toLowerCase() === playbook.role.toLowerCase())) return {};
+        return { playbooks: [...s.playbooks, playbook] };
       }),
       updateBSPartner: (partnerId, updates) => set(s => ({ bsPartners: s.bsPartners.map(p => p.id === partnerId ? { ...p, ...updates } : p) })),
     }),
