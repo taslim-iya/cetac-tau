@@ -249,8 +249,11 @@ export const useStore = create<S>()(
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
 
       login: (email: string, password: string) => {
-        const user = get().users.find(u => u.email === email && u.password === password);
+        const e = email.trim().toLowerCase();
+        const p = password.trim();
+        const user = get().users.find(u => u.email.trim().toLowerCase() === e && u.password.trim() === p);
         if (user) { set({ currentUser: user }); return true; }
+        console.log('[CETAC login] failed for:', e, '| users:', get().users.map(u => u.email));
         return false;
       },
       logout: () => set({ currentUser: null }),
