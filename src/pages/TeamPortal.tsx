@@ -24,6 +24,9 @@ const MODULES = [
   { key: 'chat', label: 'AI Chat', desc: 'AI assistant' },
   { key: 'import', label: 'Import', desc: 'Import data' },
   { key: 'export', label: 'Export', desc: 'Export data' },
+  { key: 'playbook', label: 'Playbook', desc: 'Role playbooks and KPIs' },
+  { key: 'kpi', label: 'KPI Tracker', desc: 'KPI tracking by vertical' },
+  { key: 'resources', label: 'Resources', desc: 'Links and documents' },
   { key: 'settings', label: 'Settings', desc: 'App settings' },
   { key: 'teamPortal', label: 'Team Management', desc: 'Manage team access (admin only)' },
 ];
@@ -31,13 +34,13 @@ const MODULES = [
 // Role presets
 const ROLE_PRESETS: Record<string, string[]> = {
   'President': MODULES.map(m => m.key), // Full access
-  'VP Partnerships — External': ['dashboard', 'plan', 'calendar', 'partnerships', 'sponsors', 'crm', 'outreach', 'templates', 'searchDay', 'export'],
-  'VP Communications & Sponsorship': ['dashboard', 'plan', 'calendar', 'content', 'outreach', 'templates', 'crm', 'sponsors', 'export'],
-  'VP Operations': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'roles', 'teamPortal', 'export', 'import'],
-  'VP Administration & Events': ['dashboard', 'plan', 'calendar', 'events', 'searchDay', 'tasks', 'export'],
-  'VP Community': ['dashboard', 'plan', 'calendar', 'crm', 'content', 'outreach', 'templates'],
-  'Member': ['dashboard', 'plan', 'calendar', 'tasks', 'events'],
-  'Potential Member': ['dashboard', 'plan', 'calendar'],
+  'VP Partnerships — External': ['dashboard', 'plan', 'calendar', 'partnerships', 'sponsors', 'crm', 'outreach', 'templates', 'searchDay', 'export', 'playbook', 'kpi', 'resources', 'memberTasks'],
+  'VP Communications & Sponsorship': ['dashboard', 'plan', 'calendar', 'content', 'outreach', 'templates', 'crm', 'sponsors', 'export', 'playbook', 'kpi', 'resources', 'memberTasks'],
+  'VP Operations': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'roles', 'teamPortal', 'export', 'import', 'playbook', 'kpi', 'resources', 'memberTasks'],
+  'VP Administration & Events': ['dashboard', 'plan', 'calendar', 'events', 'searchDay', 'tasks', 'export', 'playbook', 'kpi', 'resources', 'memberTasks'],
+  'VP Community': ['dashboard', 'plan', 'calendar', 'crm', 'content', 'outreach', 'templates', 'playbook', 'kpi', 'resources', 'memberTasks'],
+  'Member': ['dashboard', 'plan', 'calendar', 'tasks', 'events', 'playbook', 'resources', 'memberTasks'],
+  'Potential Member': ['dashboard', 'plan', 'calendar', 'resources'],
 };
 
 interface MemberAccess {
