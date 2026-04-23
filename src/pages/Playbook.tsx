@@ -481,7 +481,7 @@ export default function Playbook() {
             playbook={selectedPlaybook}
             canEdit={canEditPb(selectedPlaybook)}
             isAdmin={isAdmin}
-            teamMembers={team.filter(m => m.status === 'active')}
+            teamMembers={team.filter(m => !m.status || m.status === 'active')}
             onUpdateTask={(section, taskId) => handleToggleTask(selectedPlaybook.id, section, taskId)}
             onUpdateTaskNotes={(section, taskId, notes) => handleUpdateTaskNotes(selectedPlaybook.id, section, taskId, notes)}
             onUpdateKPI={(kpiId, field, value) => handleUpdateKPI(selectedPlaybook.id, kpiId, field, value)}

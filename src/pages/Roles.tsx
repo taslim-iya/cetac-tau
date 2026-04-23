@@ -80,7 +80,7 @@ export default function Roles() {
   const interviewing = roleCards.filter(r => r.status === 'interviewing').length;
   const filled = roleCards.filter(r => r.status === 'filled').length;
 
-  const activeMembers = team.filter(m => m.status === 'active');
+  const activeMembers = team.filter(m => !m.status || m.status === 'active');
 
   return (
     <div style={{ padding: '32px 40px', maxWidth: 1000 }}>

@@ -260,7 +260,9 @@ export const useStore = create<S>()(
 
       add: (key, item) => {
         const newId = id();
-        const newItem = { ...item, id: newId, createdAt: new Date().toISOString() };
+        // Ensure team members always have status defaulting to 'active'
+        const defaults = key === 'team' ? { status: 'active', vertical: '', email: '', phone: '', linkedin: '', responsibilities: '' } : {};
+        const newItem = { ...defaults, ...item, id: newId, createdAt: new Date().toISOString() };
         set(s => {
           const updated: any = { [key]: [newItem, ...(s as any)[key]] };
           // Auto-create user account when adding a team member

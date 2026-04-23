@@ -17,7 +17,7 @@ export default function MemberTasks() {
   const [showAdd, setShowAdd] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', description: '', assigneeId: '', assigneeName: '', type: 'one-off' as MemberTask['type'], dueDate: '' });
 
-  const activeMembers = team.filter(m => m.status === 'active');
+  const activeMembers = team.filter(m => (!m.status || m.status === 'active'));
   const filtered = selectedMember === 'all' ? memberTasks : memberTasks.filter(t => t.assigneeName === selectedMember);
 
   const handleAdd = () => {

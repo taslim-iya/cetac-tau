@@ -114,7 +114,7 @@ export default function Tasks() {
   const { tasks, team, update, add, remove, addMemberTask } = useStore();
   const [autoAssigning, setAutoAssigning] = useState(false);
   const [aiAssigning, setAiAssigning] = useState(false);
-  const activeMembers = team.filter(m => m.status === 'active');
+  const activeMembers = team.filter(m => (!m.status || m.status === 'active'));
   const unassignedCount = tasks.filter(t => !t.assignees?.length && t.status !== 'done').length;
 
   const handleAutoAssign = () => {

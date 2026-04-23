@@ -20,7 +20,7 @@ export default function Chat() {
 
   const getStoreContext = () => {
     const s = store;
-    return `Current CETAC data:\n- Team: ${s.team.length} members (${s.team.filter(t => t.status === 'active').length} active): ${s.team.map(t => `${t.name} (${t.role})`).join(', ')}\n- Tasks: ${s.tasks.length} total, ${s.tasks.filter(t => t.status === 'done').length} done, ${s.tasks.filter(t => t.status === 'todo').length} todo\n- Events: ${s.events.length}\n- Partnerships: ${s.partnerships.length}\n- Contacts: ${s.contacts.length}\n- Member Tasks: ${s.memberTasks.length}`;
+    return `Current CETAC data:\n- Team: ${s.team.length} members (${s.team.filter(t => (!t.status || t.status === 'active')).length} active): ${s.team.map(t => `${t.name} (${t.role})`).join(', ')}\n- Tasks: ${s.tasks.length} total, ${s.tasks.filter(t => t.status === 'done').length} done, ${s.tasks.filter(t => t.status === 'todo').length} todo\n- Events: ${s.events.length}\n- Partnerships: ${s.partnerships.length}\n- Contacts: ${s.contacts.length}\n- Member Tasks: ${s.memberTasks.length}`;
   };
 
   const parseAndExecute = (text: string): string => {
@@ -88,12 +88,12 @@ export default function Chat() {
       }
       const total = store.tasks.length;
       const done = store.tasks.filter(t => t.status === 'done').length;
-      return `📊 **Overall Progress**\n\n• Tasks: ${done}/${total} (${total ? Math.round(done/total*100) : 0}%)\n• Team: ${store.team.filter(t => t.status === 'active').length} active\n• Events: ${store.events.length} planned\n• Partnerships: ${store.partnerships.length}\n• CRM Contacts: ${store.contacts.length}\n• Member Tasks: ${store.memberTasks.length}`;
+      return `📊 **Overall Progress**\n\n• Tasks: ${done}/${total} (${total ? Math.round(done/total*100) : 0}%)\n• Team: ${store.team.filter(t => (!t.status || t.status === 'active')).length} active\n• Events: ${store.events.length} planned\n• Partnerships: ${store.partnerships.length}\n• CRM Contacts: ${store.contacts.length}\n• Member Tasks: ${store.memberTasks.length}`;
     }
 
     // Team info
     if (lower.includes('who') && (lower.includes('team') || lower.includes('member'))) {
-      return `👥 **Team Members**\n\n${store.team.filter(t => t.status === 'active').map(t => `• **${t.name}** — ${t.role}${t.responsibilities ? ` (${t.responsibilities.slice(0, 60)}...)` : ''}`).join('\n')}`;
+      return `👥 **Team Members**\n\n${store.team.filter(t => (!t.status || t.status === 'active')).map(t => `• **${t.name}** — ${t.role}${t.responsibilities ? ` (${t.responsibilities.slice(0, 60)}...)` : ''}`).join('\n')}`;
     }
 
     // List tasks for member
