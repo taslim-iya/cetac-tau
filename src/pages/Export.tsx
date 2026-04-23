@@ -11,6 +11,9 @@ const ENTITIES = [
   { key: 'content', label: 'Content' },
   { key: 'outreach', label: 'Outreach' },
   { key: 'memberTasks', label: 'Member Tasks' },
+  { key: 'playbooks', label: 'Playbooks' },
+  { key: 'verticals', label: 'KPI Verticals' },
+  { key: 'users', label: 'User Accounts' },
 ];
 
 export default function Export() {
