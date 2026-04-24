@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { UserPlus, Check, Clock, AlertTriangle, Sparkles, Loader2 } from 'lucide-react';
 import EditableCell from '../components/EditableCell';
 import { useStore } from '../store';
-import { generatePlaybookForRole } from '../lib/ai-role';
+import { generatePlaybookForRole, matchTeamToPlaybook } from '../lib/ai-role';
 
 const STATUS_ICON = { vacant: AlertTriangle, interviewing: Clock, filled: Check };
 const STATUS_COLOR = { vacant: 'var(--red)', interviewing: 'var(--yellow)', filled: 'var(--green)' };
@@ -54,7 +54,14 @@ export default function Roles() {
     if (!hasPlaybook) {
       setGenerating(roleName);
       try {
-        const pb = await generatePlaybookForRole(roleName);
+        const pb = await generatePlaybookForRole(roleName, playbooks);
+        // AI-match team members to this new playbook
+        const activeTeam = team.filter(m => !m.status || m.status === 'active');
+        const matchedNames = await matchTeamToPlaybook(roleName, activeTeam.map(m => ({ name: m.name, role: m.role })));
+        if (matchedNames.length > 0) {
+          pb.assignedTo = matchedNames;
+          if (pb.holder === 'Vacant') pb.holder = matchedNames[0];
+        }
         addPlaybook(pb);
       } catch (e) { console.error('Playbook generation failed:', e); }
       setGenerating(null);

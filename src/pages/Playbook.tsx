@@ -333,11 +333,13 @@ export default function Playbook() {
   // Auto-match: if team member's role contains keywords from the playbook role name
   const isRoleMatch = (pb: RolePlaybook) => {
     if (!myName) return false;
+    // Check if AI already assigned this member
+    if (pb.assignedTo?.some(n => n.toLowerCase() === myName.toLowerCase())) return true;
+    // Fallback: keyword matching
     const myTeam = team.find(m => m.name.toLowerCase() === myName.toLowerCase());
     if (!myTeam) return false;
     const myRoles = (myTeam.role || '').toLowerCase();
     const pbRole = pb.role.toLowerCase();
-    // Match if member role keywords overlap with playbook role
     const pbWords = pbRole.split(/[\s\/&,\-–]+/).filter(w => w.length > 2 && !['and','the','for','lead'].includes(w));
     return pbWords.some(w => myRoles.includes(w)) || myRoles.includes(pbRole.slice(0, 15));
   };

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useStore } from '../store';
-import { generatePlaybookForRole } from '../lib/ai-role';
+import { generatePlaybookForRole, matchTeamToPlaybook } from '../lib/ai-role';
 
 interface Props {
   value: string; // comma-separated roles e.g. "President, VP Operations"
@@ -25,7 +25,7 @@ export default function RoleCombobox({ value, roles, onChange }: Props) {
   const [generating, setGenerating] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { addRole: storeAddRole, addPlaybook, playbooks } = useStore();
+  const { addRole: storeAddRole, addPlaybook, playbooks, team, update } = useStore();
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -53,7 +53,18 @@ export default function RoleCombobox({ value, roles, onChange }: Props) {
       if (!hasPlaybook) {
         setGenerating(true);
         try {
-          const pb = await generatePlaybookForRole(role);
+          // Pass existing playbooks so AI can find similar ones as templates
+          const pb = await generatePlaybookForRole(role, playbooks);
+          // AI-match team members whose roles are similar
+          const activeTeam = team.filter(m => !m.status || m.status === 'active');
+          const matchedNames = await matchTeamToPlaybook(role, activeTeam.map(m => ({ name: m.name, role: m.role })));
+          if (matchedNames.length > 0) {
+            pb.assignedTo = matchedNames;
+            // Also set the first matched member as holder if still Vacant
+            if (pb.holder === 'Vacant') {
+              pb.holder = matchedNames[0];
+            }
+          }
           addPlaybook(pb);
         } catch (e) { console.error('Failed to generate playbook:', e); }
         setGenerating(false);
