@@ -259,6 +259,8 @@ export const useStore = create<S>()(
       logout: () => set({ currentUser: null }),
 
       add: (key, item) => {
+        // Reject team members with blank names
+        if (key === 'team' && !(item as any).name?.trim()) return;
         const newId = id();
         // Ensure team members always have status defaulting to 'active'
         const defaults = key === 'team' ? { status: 'active', vertical: '', email: '', phone: '', linkedin: '', responsibilities: '' } : {};

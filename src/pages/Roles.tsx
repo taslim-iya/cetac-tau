@@ -56,7 +56,7 @@ export default function Roles() {
       try {
         const pb = await generatePlaybookForRole(roleName, playbooks);
         // AI-match team members to this new playbook
-        const activeTeam = team.filter(m => !m.status || m.status === 'active');
+        const activeTeam = team.filter(m => m.name && (!m.status || m.status === 'active' || m.status === 'new'));
         const matchedNames = await matchTeamToPlaybook(roleName, activeTeam.map(m => ({ name: m.name, role: m.role })));
         if (matchedNames.length > 0) {
           pb.assignedTo = matchedNames;
@@ -87,7 +87,7 @@ export default function Roles() {
   const interviewing = roleCards.filter(r => r.status === 'interviewing').length;
   const filled = roleCards.filter(r => r.status === 'filled').length;
 
-  const activeMembers = team.filter(m => !m.status || m.status === 'active');
+  const activeMembers = team.filter(m => m.name && (!m.status || m.status === 'active' || m.status === 'new'));
 
   return (
     <div style={{ padding: '32px 40px', maxWidth: 1000 }}>

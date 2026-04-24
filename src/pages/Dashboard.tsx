@@ -14,7 +14,7 @@ export default function Dashboard() {
   const inProgress = tasks.filter(t => t.status === 'in_progress').length;
   const done = tasks.filter(t => t.status === 'done').length;
   const urgent = tasks.filter(t => t.priority === 'urgent' && t.status !== 'done').length;
-  const activeTeam = team.filter(t => (!t.status || t.status === 'active')).length;
+  const activeTeam = team.filter(t => (t.name && (!t.status || t.status === 'active' || t.status === 'new'))).length;
   const now = new Date();
   const overdue = tasks.filter(t => t.status !== 'done' && t.dueDate && new Date(t.dueDate) < now);
 

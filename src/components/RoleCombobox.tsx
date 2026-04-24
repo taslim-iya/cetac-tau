@@ -56,7 +56,7 @@ export default function RoleCombobox({ value, roles, onChange }: Props) {
           // Pass existing playbooks so AI can find similar ones as templates
           const pb = await generatePlaybookForRole(role, playbooks);
           // AI-match team members whose roles are similar
-          const activeTeam = team.filter(m => !m.status || m.status === 'active');
+          const activeTeam = team.filter(m => m.name && (!m.status || m.status === 'active' || m.status === 'new'));
           const matchedNames = await matchTeamToPlaybook(role, activeTeam.map(m => ({ name: m.name, role: m.role })));
           if (matchedNames.length > 0) {
             pb.assignedTo = matchedNames;

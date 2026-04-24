@@ -12,7 +12,7 @@ export default function KPITracker() {
   const [editingKpi, setEditingKpi] = useState<string | null>(null);
 
   // Team performance stats
-  const teamStats = team.filter(m => (!m.status || m.status === 'active')).map(m => {
+  const teamStats = team.filter(m => (m.name && (!m.status || m.status === 'active' || m.status === 'new'))).map(m => {
     const assigned = tasks.filter(t => t.assignees.includes(m.name));
     const done = assigned.filter(t => t.status === 'done').length;
     const mTasks = memberTasks.filter(t => t.assigneeId === m.id || t.assigneeName === m.name);
@@ -102,7 +102,7 @@ export default function KPITracker() {
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Lead</label>
             <select onChange={e => {}} style={{ padding: '6px 10px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, background: 'var(--bg)', color: 'var(--text)' }}>
               <option value="">No lead</option>
-              {team.filter(m => (!m.status || m.status === 'active')).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              {team.filter(m => (m.name && (!m.status || m.status === 'active' || m.status === 'new'))).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             </select>
           </div>
           <button onClick={() => {
@@ -150,7 +150,7 @@ export default function KPITracker() {
                   <select value={v.leadId} onChange={e => updateVertical(v.id, { leadId: e.target.value })}
                     style={{ padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 4, fontSize: 12, background: 'var(--bg)', color: 'var(--text)' }}>
                     <option value="">Unassigned</option>
-                    {team.filter(m => (!m.status || m.status === 'active')).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
+                    {team.filter(m => (m.name && (!m.status || m.status === 'active' || m.status === 'new'))).map(m => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
                   </select>
                   <div style={{ flex: 1 }} />
                   <button onClick={(e) => { e.stopPropagation(); handleAddKpi(v.id); }}
