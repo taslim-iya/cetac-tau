@@ -1,4 +1,4 @@
-const CACHE = 'cetac-v1';
+const CACHE = 'cetac-v5';
 const PRECACHE = ['/', '/index.html'];
 
 self.addEventListener('install', e => {
@@ -15,11 +15,19 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  // Always go network-first for HTML pages (never serve stale app shell)
+  if (e.request.mode === 'navigate' || e.request.destination === 'document') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+  // For other assets: network first, fall back to cache
   e.respondWith(
     fetch(e.request).then(res => {
       const clone = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, clone));
       return res;
-    }).catch(() => caches.match(e.request).then(r => r || caches.match('/index.html')))
+    }).catch(() => caches.match(e.request))
   );
 });
