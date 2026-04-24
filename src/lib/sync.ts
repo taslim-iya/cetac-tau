@@ -5,6 +5,7 @@ let lastSavedJson = '';
 let remoteLoaded = false; // Don't save until we've loaded remote state first
 
 export function markRemoteLoaded() { remoteLoaded = true; }
+export function isRemoteLoaded() { return remoteLoaded; }
 
 export async function loadRemoteState(): Promise<Record<string, any> | null> {
   try {

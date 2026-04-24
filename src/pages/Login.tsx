@@ -1,60 +1,56 @@
 import { useState, useEffect } from 'react';
 import { useStore } from '../store';
+import { isRemoteLoaded } from '../lib/sync';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [showAccounts, setShowAccounts] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [ready, setReady] = useState(false);
   const login = useStore(s => s.login);
   const users = useStore(s => s.users);
 
-  // Wait for remote sync to complete before enabling login
+  // Wait for remote sync to actually complete
   useEffect(() => {
-    // Check every 200ms if users have loaded (max 3 seconds)
     let checks = 0;
     const interval = setInterval(() => {
       checks++;
-      const currentUsers = useStore.getState().users;
-      if (currentUsers.length > 1 || checks >= 15) {
-        setLoading(false);
+      if (isRemoteLoaded() || checks >= 25) { // 25 * 200ms = 5 seconds max
+        setReady(true);
         clearInterval(interval);
       }
     }, 200);
+    // Also check immediately in case it loaded already
+    if (isRemoteLoaded()) { setReady(true); clearInterval(interval); }
     return () => clearInterval(interval);
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
     const ok = login(email, password);
     if (!ok) {
-      // Debug: log what we're comparing
-      const currentUsers = useStore.getState().users;
-      console.log('[CETAC Login] Failed attempt:', {
-        input: { email: email.trim().toLowerCase(), password: password.trim() },
-        availableEmails: currentUsers.map(u => u.email),
-        userCount: currentUsers.length,
-      });
-      setError(`Invalid credentials. ${currentUsers.length} accounts loaded.`);
+      setError('Invalid email or password');
     }
   };
 
-  const quickLogin = (e: string, p: string) => {
-    setEmail(e);
-    setPassword(p);
-    // Small delay to ensure state is set before login fires
-    setTimeout(() => login(e, p), 50);
+  const quickLogin = (userEmail: string, userPassword: string) => {
+    const ok = login(userEmail, userPassword);
+    if (!ok) {
+      // If direct call fails, set fields and try via form
+      setEmail(userEmail);
+      setPassword(userPassword);
+      setError('Login failed — try clicking Sign In');
+    }
   };
 
-  if (loading) {
+  if (!ready) {
     return (
       <div className="login-container">
         <div className="login-box" style={{ textAlign: 'center', padding: 40 }}>
           <img src="/logo.jpg" alt="Cambridge ETA Club" style={{ height: 48, objectFit: 'contain', marginBottom: 16 }} />
-          <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Loading accounts...</div>
+          <div style={{ fontSize: 13, color: 'var(--text-3)', marginTop: 8 }}>Loading...</div>
         </div>
       </div>
     );
@@ -86,11 +82,10 @@ export default function Login() {
           </button>
         </form>
 
-        {/* Quick login - always visible, easier access */}
         <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
           <button onClick={() => setShowAccounts(!showAccounts)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text-3)', textDecoration: 'underline', fontFamily: 'var(--sans)', width: '100%', textAlign: 'center' }}>
-            {showAccounts ? 'Hide accounts' : `Show available accounts (${users.length})`}
+            {showAccounts ? 'Hide accounts' : `Show accounts (${users.length})`}
           </button>
           {showAccounts && (
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 300, overflowY: 'auto' }}>
@@ -106,7 +101,6 @@ export default function Login() {
                   </span>
                 </button>
               ))}
-              {users.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'center', padding: 8 }}>No accounts loaded — try refreshing</div>}
             </div>
           )}
         </div>
