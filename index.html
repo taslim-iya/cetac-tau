@@ -26,8 +26,18 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Force purge old SW cache and reload with fresh code
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js'));
+        window.addEventListener('load', async () => {
+          // Delete ALL caches first
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+          // Unregister old SW, register fresh
+          const regs = await navigator.serviceWorker.getRegistrations();
+          for (const r of regs) await r.unregister();
+          // Register new SW
+          navigator.serviceWorker.register('/sw.js');
+        });
       }
     </script>
   </body>
