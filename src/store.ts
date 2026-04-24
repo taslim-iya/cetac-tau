@@ -278,6 +278,22 @@ export const useStore = create<S>()(
                 permissions: permsForRole(role), teamMemberId: newId,
               }];
             }
+            // Auto-generate playbook for this role if one doesn't exist (async, non-blocking)
+            if (role && !role.toLowerCase().includes('member')) {
+              const hasPlaybook = s.playbooks.some(p => p.role.toLowerCase() === role.toLowerCase());
+              if (!hasPlaybook) {
+                setTimeout(async () => {
+                  try {
+                    const { generatePlaybookForRole } = await import('./lib/ai-role');
+                    const state = useStore.getState();
+                    const pb = await generatePlaybookForRole(role, state.playbooks);
+                    pb.holder = name;
+                    pb.assignedTo = [name];
+                    useStore.getState().addPlaybook(pb);
+                  } catch (e) { console.error('Auto playbook gen failed:', e); }
+                }, 100);
+              }
+            }
           }
           return updated;
         });
@@ -372,14 +388,16 @@ export const useStore = create<S>()(
         setTimeout(async () => {
           try {
             const local = useStore.getState();
-            // Backfill playbooks/bsPartners - merge new defaults into existing without wiping
+            // Backfill playbooks: only add defaults if store has zero playbooks (first ever load)
+            // After that, playbooks come from localStorage/Supabase sync and AI generation
             if (!local.playbooks || local.playbooks.length === 0) {
               useStore.setState({ playbooks: DEFAULT_PLAYBOOKS });
             } else {
-              const existingIds = new Set(local.playbooks.map((p: any) => p.id));
-              const newPbs = DEFAULT_PLAYBOOKS.filter(p => !existingIds.has(p.id));
+              // Just ensure assignedTo field exists on old playbooks
               const patched = local.playbooks.map((p: any) => p.assignedTo ? p : { ...p, assignedTo: [] });
-              useStore.setState({ playbooks: newPbs.length > 0 ? [...patched, ...newPbs] : patched });
+              if (patched.some((p: any, i: number) => p !== local.playbooks[i])) {
+                useStore.setState({ playbooks: patched });
+              }
             }
             if (!local.bsPartners || local.bsPartners.length === 0) {
               useStore.setState({ bsPartners: DEFAULT_BS_PARTNERS });
@@ -392,6 +410,9 @@ export const useStore = create<S>()(
             }
             // Now safe to start syncing changes back to remote
             markRemoteLoaded();
+
+            // Auto-sync: ensure every unique team role has a playbook
+            syncTeamRolesToPlaybooks();
           } catch {
             markRemoteLoaded(); // Even on error, allow saving
           }
@@ -400,6 +421,51 @@ export const useStore = create<S>()(
     }
   )
 );
+
+// Auto-sync team roles → playbooks (runs once on load)
+async function syncTeamRolesToPlaybooks() {
+  const { team, playbooks, addPlaybook } = useStore.getState();
+  const activeTeam = team.filter(m => !m.status || m.status === 'active');
+  
+  // Get unique roles from team (skip generic "Member" and "Potential Member")
+  const teamRoles = [...new Set(activeTeam.map(m => m.role).filter(r => r && !r.toLowerCase().includes('member')))];
+  
+  // Find roles without a matching playbook (using AI-style fuzzy matching)
+  const playbookRoles = playbooks.map(p => p.role.toLowerCase());
+  
+  for (const role of teamRoles) {
+    const roleLower = role.toLowerCase();
+    // Check for exact or close match
+    const hasMatch = playbookRoles.some(pr => {
+      // Exact match
+      if (pr === roleLower) return true;
+      // One contains the other
+      if (pr.includes(roleLower) || roleLower.includes(pr)) return true;
+      // Keyword overlap (at least 2 significant words match)
+      const roleWords = roleLower.split(/[\s\/&,\-–]+/).filter(w => w.length > 2 && !['and','the','for','lead','vp','vice','president'].includes(w));
+      const pbWords = pr.split(/[\s\/&,\-–]+/).filter(w => w.length > 2 && !['and','the','for','lead','vp','vice','president'].includes(w));
+      const overlap = roleWords.filter(w => pbWords.some(pw => pw.includes(w) || w.includes(pw)));
+      return overlap.length >= 1;
+    });
+    
+    if (!hasMatch) {
+      // Auto-generate a playbook for this team role
+      try {
+        const { generatePlaybookForRole, matchTeamToPlaybook } = await import('./lib/ai-role');
+        const pb = await generatePlaybookForRole(role, playbooks);
+        // Find the team member(s) with this role
+        const membersWithRole = activeTeam.filter(m => m.role === role);
+        if (membersWithRole.length > 0) {
+          pb.holder = membersWithRole[0].name;
+          pb.assignedTo = membersWithRole.map(m => m.name);
+        }
+        addPlaybook(pb);
+      } catch (e) {
+        console.error('Auto-sync playbook generation failed for role:', role, e);
+      }
+    }
+  }
+}
 
 // Subscribe to changes and sync to remote (debounced)
 useStore.subscribe((state) => {
