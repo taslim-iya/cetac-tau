@@ -41,13 +41,13 @@ const mobileNav = [
 
 export default function Sidebar() {
   const loc = useLocation();
-  const { darkMode, toggleDarkMode, currentUser, logout, team } = useStore();
+  const { darkMode, toggleDarkMode, currentUser, logout, team, accessOverrides } = useStore();
   const [moreOpen, setMoreOpen] = useState(false);
 
   const allowedModules = useMemo(() => {
     if (!currentUser) return [];
-    return getUserModules(currentUser, team);
-  }, [currentUser, team]);
+    return getUserModules(currentUser, team, accessOverrides);
+  }, [currentUser, team, accessOverrides]);
 
   const filteredNav = useMemo(() => {
     return nav.filter(item => {

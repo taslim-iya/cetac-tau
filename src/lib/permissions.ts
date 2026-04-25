@@ -43,37 +43,33 @@ export const ROLE_PRESETS: Record<string, string[]> = {
 };
 
 /**
- * Get the allowed module keys for a user.
- * super_admin always gets full access.
- * team_member gets permissions from:
- *   1. cetac-access localStorage (if customised in TeamPortal)
- *   2. Role preset based on linked team member's role
- *   3. Fallback: Member preset
+ * Get the allowed module keys for a user. Permission sources, in order:
+ *   1. super_admin → full access
+ *   2. accessOverrides from the synced store (set in TeamPortal)
+ *   3. Role preset based on the linked team member's role
+ *   4. Fallback: Member preset
+ *
+ * `accessOverrides` is read from the Zustand store and passed in by callers
+ * so this function stays a pure helper and the override is shared across all
+ * browsers via the same Supabase sync as the rest of the app state.
  */
-export function getUserModules(user: { id: string; role: string; teamMemberId?: string; name: string }, teamMembers: { id: string; role: string }[]): string[] {
-  // Super admin = full access
+export function getUserModules(
+  user: { id: string; role: string; teamMemberId?: string; name: string },
+  teamMembers: { id: string; role: string }[],
+  accessOverrides: { memberId: string; permissions: string[] }[] = [],
+): string[] {
   if (user.role === 'super_admin') return Object.keys(MODULE_ROUTES);
 
-  // Check TeamPortal custom permissions (cetac-access)
-  try {
-    const saved = localStorage.getItem('cetac-access');
-    if (saved) {
-      const accessList: { memberId: string; permissions: string[] }[] = JSON.parse(saved);
-      // Match by teamMemberId or find by scanning
-      const match = user.teamMemberId
-        ? accessList.find(a => a.memberId === user.teamMemberId)
-        : null;
-      if (match && match.permissions.length > 0) return match.permissions;
-    }
-  } catch {}
+  if (user.teamMemberId) {
+    const match = accessOverrides.find(a => a.memberId === user.teamMemberId);
+    if (match && match.permissions.length > 0) return match.permissions;
+  }
 
-  // Fall back to role preset from linked team member
   if (user.teamMemberId) {
     const member = teamMembers.find(m => m.id === user.teamMemberId);
     if (member?.role && ROLE_PRESETS[member.role]) return ROLE_PRESETS[member.role];
   }
 
-  // Fallback: Member preset
   return ROLE_PRESETS['Member'] || ['dashboard', 'plan', 'calendar'];
 }
 

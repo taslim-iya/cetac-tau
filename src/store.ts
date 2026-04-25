@@ -2,9 +2,24 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach, Vertical, KPI } from './types';
 import { id } from './lib/utils';
-import { loadRemoteState, saveRemoteState, mergeState, markRemoteLoaded } from './lib/sync';
+import { loadRemoteState, saveRemoteState, mergeState, markRemoteLoaded, markUserEdit, startRemotePolling } from './lib/sync';
 import type { RolePlaybook, BSPartner } from './data/playbook-data';
 import { DEFAULT_PLAYBOOKS, DEFAULT_BS_PARTNERS } from './data/playbook-data';
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  authorName?: string;
+}
+
+export interface AccessOverride {
+  memberId: string;
+  permissions: string[];
+  isAdmin: boolean;
+  pin: string;
+}
 
 interface S {
   contacts: Contact[]; team: TeamMember[]; tasks: Task[]; events: CETACEvent[];
@@ -14,6 +29,12 @@ interface S {
   memberTasks: MemberTask[];
   roles: string[];
   verticals: Vertical[];
+  chatMessages: ChatMessage[];
+  accessOverrides: AccessOverride[];
+  // Tombstone log: per-collection list of recently-deleted item ids. Lets
+  // deletions replicate across browsers when paired with the additive merge
+  // in mergeState / api/sync.js.
+  _deletedIds: Record<string, string[]>;
   darkMode: boolean;
   toggleDarkMode: () => void;
   login: (email: string, password: string) => boolean;
@@ -38,6 +59,10 @@ interface S {
   updatePlaybook: (playbookId: string, updates: Partial<RolePlaybook>) => void;
   addPlaybook: (playbook: RolePlaybook) => void;
   updateBSPartner: (partnerId: string, updates: Partial<BSPartner>) => void;
+  addChatMessage: (msg: Omit<ChatMessage, 'id' | 'timestamp'>) => void;
+  clearChatMessages: () => void;
+  setAccessOverrides: (next: AccessOverride[]) => void;
+  upsertAccessOverride: (memberId: string, patch: Partial<AccessOverride>) => void;
 }
 
 const TEAM: TeamMember[] = [
@@ -125,6 +150,23 @@ const PARTNERSHIPS: Partnership[] = [
 function slug(name: string) { return name.toLowerCase().replace(/[^a-z0-9]+/g, ''); }
 function makeEmail(name: string) { return `${name.toLowerCase().replace(/\s+/g, '.')}@etacambridge.co.uk`; }
 function makePassword(name: string) { return `cetac-${slug(name)}26`; }
+
+// Flag set true while we're writing remote state into the local store. Lets
+// the bottom subscriber distinguish "user just edited something" (debounce a
+// remote save, suppress the next poll) from "we just merged a remote pull"
+// (no save needed; don't suppress polling).
+let applyingRemoteState = false;
+
+// Cap the tombstone log so it doesn't grow forever. 500 most-recent deletions
+// per collection is plenty to outlive the longest realistic offline window
+// while keeping payloads small.
+const TOMBSTONE_CAP = 500;
+function pushTombstone(log: Record<string, string[]> | undefined, key: string, itemId: string): Record<string, string[]> {
+  const current = log?.[key] || [];
+  const next = current.includes(itemId) ? current : [...current, itemId];
+  const trimmed = next.length > TOMBSTONE_CAP ? next.slice(next.length - TOMBSTONE_CAP) : next;
+  return { ...(log || {}), [key]: trimmed };
+}
 
 // Role-based permission presets
 const ROLE_PERMS: Record<string, Record<string, 'edit' | 'view'>> = {
@@ -247,6 +289,9 @@ export const useStore = create<S>()(
       verticals: DEFAULT_VERTICALS,
       playbooks: DEFAULT_PLAYBOOKS,
       bsPartners: DEFAULT_BS_PARTNERS,
+      chatMessages: [],
+      accessOverrides: [],
+      _deletedIds: {},
       darkMode: false,
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
 
@@ -347,23 +392,40 @@ export const useStore = create<S>()(
         }
         return result;
       }),
-      remove: (key, itemId) => set(s => ({ [key]: (s as any)[key].filter((i: any) => i.id !== itemId) })),
+      remove: (key, itemId) => set(s => ({
+        [key]: (s as any)[key].filter((i: any) => i.id !== itemId),
+        _deletedIds: pushTombstone(s._deletedIds, key, itemId),
+      } as any)),
       updateSettings: (upd) => set(s => ({ settings: { ...s.settings, ...upd } })),
 
       addMemberTask: (task) => set(s => ({ memberTasks: [{ ...task, id: id(), createdAt: new Date().toISOString() }, ...s.memberTasks] })),
       updateMemberTask: (taskId, updates) => set(s => ({ memberTasks: s.memberTasks.map(t => t.id === taskId ? { ...t, ...updates } : t) })),
-      removeMemberTask: (taskId) => set(s => ({ memberTasks: s.memberTasks.filter(t => t.id !== taskId) })),
+      removeMemberTask: (taskId) => set(s => ({
+        memberTasks: s.memberTasks.filter(t => t.id !== taskId),
+        _deletedIds: pushTombstone(s._deletedIds, 'memberTasks', taskId),
+      })),
       addUser: (user) => set(s => ({ users: [...s.users, { ...user, id: id() }] })),
       updateUser: (userId, updates) => set(s => ({ users: s.users.map(u => u.id === userId ? { ...u, ...updates } : u) })),
-      removeUser: (userId) => set(s => ({ users: s.users.filter(u => u.id !== userId) })),
+      removeUser: (userId) => set(s => ({
+        users: s.users.filter(u => u.id !== userId),
+        _deletedIds: pushTombstone(s._deletedIds, 'users', userId),
+      })),
       addRole: (role) => set(s => {
         if (s.roles.includes(role)) return {};
         return { roles: [...s.roles, role] };
       }),
-      removeRole: (role) => set(s => ({ roles: s.roles.filter(r => r !== role) })),
+      // Roles use the role string itself as the identity. The tombstone log
+      // therefore needs the role text, not a uuid.
+      removeRole: (role) => set(s => ({
+        roles: s.roles.filter(r => r !== role),
+        _deletedIds: pushTombstone(s._deletedIds, 'roles', role),
+      })),
       addVertical: (v) => set(s => ({ verticals: [...s.verticals, { ...v, id: id(), createdAt: new Date().toISOString() }] })),
       updateVertical: (vId, updates) => set(s => ({ verticals: s.verticals.map(v => v.id === vId ? { ...v, ...updates } : v) })),
-      removeVertical: (vId) => set(s => ({ verticals: s.verticals.filter(v => v.id !== vId) })),
+      removeVertical: (vId) => set(s => ({
+        verticals: s.verticals.filter(v => v.id !== vId),
+        _deletedIds: pushTombstone(s._deletedIds, 'verticals', vId),
+      })),
       updatePlaybook: (playbookId, updates) => set(s => {
         const result: any = { playbooks: s.playbooks.map(p => p.id === playbookId ? { ...p, ...updates } : p) };
         // When holder changes, update the corresponding team member's role to match playbook role
@@ -388,10 +450,33 @@ export const useStore = create<S>()(
         return { playbooks: [...s.playbooks, playbook] };
       }),
       updateBSPartner: (partnerId, updates) => set(s => ({ bsPartners: s.bsPartners.map(p => p.id === partnerId ? { ...p, ...updates } : p) })),
+
+      addChatMessage: (msg) => set(s => {
+        const next = [...s.chatMessages, { ...msg, id: id(), timestamp: new Date().toISOString() }];
+        // Cap chat history at 500 messages so the synced state stays bounded.
+        return { chatMessages: next.length > 500 ? next.slice(next.length - 500) : next };
+      }),
+      clearChatMessages: () => set({ chatMessages: [] }),
+
+      setAccessOverrides: (next) => set({ accessOverrides: next }),
+      upsertAccessOverride: (memberId, patch) => set(s => {
+        const idx = s.accessOverrides.findIndex(a => a.memberId === memberId);
+        if (idx === -1) {
+          return {
+            accessOverrides: [
+              ...s.accessOverrides,
+              { memberId, permissions: [], isAdmin: false, pin: '', ...patch },
+            ],
+          };
+        }
+        const next = [...s.accessOverrides];
+        next[idx] = { ...next[idx], ...patch };
+        return { accessOverrides: next };
+      }),
     }),
     {
       name: 'cetac-store',
-      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals, playbooks: s.playbooks, bsPartners: s.bsPartners, resources: (s as any).resources }),
+      partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals, playbooks: s.playbooks, bsPartners: s.bsPartners, resources: (s as any).resources, chatMessages: s.chatMessages, accessOverrides: s.accessOverrides, _deletedIds: s._deletedIds }),
       // Zustand v5 expects `onRehydrateStorage`, which returns a callback invoked
       // after rehydration completes. The previous `onRehydrate` key was silently
       // ignored, so remote state never loaded and `markRemoteLoaded` was never
@@ -400,6 +485,7 @@ export const useStore = create<S>()(
       onRehydrateStorage: () => () => {
         setTimeout(async () => {
           try {
+            applyingRemoteState = true;
             const local = useStore.getState();
             if (!local.playbooks || local.playbooks.length === 0) {
               useStore.setState({ playbooks: DEFAULT_PLAYBOOKS });
@@ -419,9 +505,20 @@ export const useStore = create<S>()(
               useStore.setState(merged);
             }
             markRemoteLoaded();
+            applyingRemoteState = false;
             syncTeamRolesToPlaybooks();
+            startRemotePolling((remoteState) => {
+              applyingRemoteState = true;
+              try {
+                const merged = mergeState(useStore.getState() as any, remoteState);
+                useStore.setState(merged);
+              } finally {
+                applyingRemoteState = false;
+              }
+            });
           } catch {
             markRemoteLoaded();
+            applyingRemoteState = false;
           }
         }, 500);
       },
@@ -474,8 +571,14 @@ async function syncTeamRolesToPlaybooks() {
   }
 }
 
-// Subscribe to changes and sync to remote (debounced)
+// Subscribe to changes and sync to remote (debounced).
 useStore.subscribe((state) => {
-  const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners } = state;
-  saveRemoteState({ contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners, resources: (state as any).resources });
+  if (!applyingRemoteState) markUserEdit();
+  const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners, chatMessages, accessOverrides, _deletedIds } = state;
+  saveRemoteState({
+    contacts, team, tasks, events, partnerships, content, outreach, calendar, settings,
+    users, memberTasks, roles, verticals, playbooks, bsPartners,
+    chatMessages, accessOverrides, _deletedIds,
+    resources: (state as any).resources,
+  });
 });

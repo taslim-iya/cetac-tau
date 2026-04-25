@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
-import { Shield, Eye, EyeOff, Check, User, Crown, Settings as SettingsIcon, ChevronDown, ChevronUp, Save, Wand2 } from 'lucide-react';
-import EditableCell from '../components/EditableCell';
+import { useState, useEffect } from 'react';
+import { Check, Crown, Save, Wand2 } from 'lucide-react';
 import { useStore } from '../store';
-import { id } from '../lib/utils';
+import type { AccessOverride } from '../store';
 import { autoModulesForRole } from '../lib/permissions';
 
 // Permission modules
@@ -43,26 +42,30 @@ const ROLE_PRESETS: Record<string, string[]> = {
   'Potential Member': ['dashboard', 'plan', 'calendar', 'resources'],
 };
 
-interface MemberAccess {
-  memberId: string;
-  permissions: string[];
-  isAdmin: boolean;
-  pin: string; // Simple 4-digit PIN for access
-}
+type MemberAccess = AccessOverride;
 
 export default function TeamPortal() {
-  const { team, update, users, addUser, updateUser, removeUser } = useStore();
-  const [accessList, setAccessList] = useState<MemberAccess[]>(() => {
-    const saved = localStorage.getItem('cetac-access');
-    if (saved) return JSON.parse(saved);
-    // Initialize with role-based defaults
-    return team.map(m => ({
-      memberId: m.id,
-      permissions: ROLE_PRESETS[m.role] || ROLE_PRESETS['Member'] || ['dashboard', 'plan', 'calendar'],
-      isAdmin: m.role === 'President' || m.role === 'VP Operations',
-      pin: '',
-    }));
-  });
+  const { team, users, addUser, updateUser, removeUser, accessOverrides, setAccessOverrides } = useStore();
+
+  // Local working copy so the editor doesn't fire a remote save on every
+  // checkbox click. Synced from the global store on load and after Save.
+  const [accessList, setAccessList] = useState<MemberAccess[]>(() => seedAccess(team, accessOverrides));
+
+  // If the team list grows (a new member is added) while this page is open,
+  // make sure the new member appears in the access list with role defaults.
+  useEffect(() => {
+    setAccessList(prev => {
+      const byId = new Map(prev.map(a => [a.memberId, a]));
+      let changed = false;
+      for (const m of team) {
+        if (!byId.has(m.id)) {
+          byId.set(m.id, defaultAccessFor(m));
+          changed = true;
+        }
+      }
+      return changed ? [...byId.values()] : prev;
+    });
+  }, [team]);
 
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -70,7 +73,9 @@ export default function TeamPortal() {
   const [newAcct, setNewAcct] = useState({ name: '', email: '', password: '', role: 'team_member' as 'super_admin' | 'team_member' });
 
   const saveAccess = () => {
-    localStorage.setItem('cetac-access', JSON.stringify(accessList));
+    // Push to the synced store so every browser sees the new permissions on
+    // their next poll/reload, instead of leaving them in this tab's localStorage.
+    setAccessOverrides(accessList);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -369,3 +374,18 @@ export default function TeamPortal() {
 }
 
 const quickBtn: React.CSSProperties = { padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 11, background: 'var(--bg)', cursor: 'pointer', fontWeight: 500, color: 'var(--text-2)' };
+
+function defaultAccessFor(m: { id: string; role: string }): MemberAccess {
+  return {
+    memberId: m.id,
+    permissions: ROLE_PRESETS[m.role] || ROLE_PRESETS['Member'] || ['dashboard', 'plan', 'calendar'],
+    isAdmin: m.role === 'President' || m.role === 'VP Operations',
+    pin: '',
+  };
+}
+
+function seedAccess(team: { id: string; role: string }[], overrides: AccessOverride[]): MemberAccess[] {
+  const byId = new Map<string, MemberAccess>(overrides.map(o => [o.memberId, o]));
+  for (const m of team) if (!byId.has(m.id)) byId.set(m.id, defaultAccessFor(m));
+  return [...byId.values()];
+}

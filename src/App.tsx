@@ -31,12 +31,13 @@ import { getUserModules, canAccessPath } from './lib/permissions';
 function ProtectedRoute({ moduleKey, children }: { moduleKey: string; children: React.ReactNode }) {
   const currentUser = useStore(s => s.currentUser);
   const team = useStore(s => s.team);
+  const accessOverrides = useStore(s => s.accessOverrides);
 
   const allowed = useMemo(() => {
     if (!currentUser) return false;
-    const modules = getUserModules(currentUser, team);
+    const modules = getUserModules(currentUser, team, accessOverrides);
     return modules.includes(moduleKey);
-  }, [currentUser, team, moduleKey]);
+  }, [currentUser, team, accessOverrides, moduleKey]);
 
   if (!allowed) {
     return (

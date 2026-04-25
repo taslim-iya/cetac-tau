@@ -1,15 +1,41 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Upload, Paperclip } from 'lucide-react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { Send, Bot, User, Paperclip } from 'lucide-react';
 import { useStore } from '../store';
-import { id } from '../lib/utils';
 import * as XLSX from 'xlsx';
 
-interface Message { id: string; role: 'user' | 'assistant'; content: string; timestamp: string; }
+const WELCOME: Message = {
+  id: 'welcome',
+  role: 'assistant',
+  content: 'Hi! I\'m the CETAC AI assistant. I can:\n\n• **Add/modify data** — "Add a task", "Create a contact", "Update CRM"\n• **Answer questions** — "How many tasks are done?", "Who\'s on the team?"\n• **Parse uploaded files** — Drop a CSV/Excel/PDF to import data\n• **Manage the app** — "Add a team member", "Change task status"\n\nWhat would you like to do?',
+  timestamp: new Date().toISOString(),
+};
+
+interface Message { id: string; role: 'user' | 'assistant'; content: string; timestamp: string; authorName?: string; }
+
+// Escape HTML so user-supplied content can't break out of our markup, then
+// apply the small set of markdown features the chat actually uses (bold,
+// inline code). Doing it in this order is what makes the dangerouslySetInnerHTML
+// downstream safe — the only HTML in the result is what we put there.
+function renderMarkdown(text: string): string {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+  return escaped
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`(.+?)`/g, '<code style="background:var(--bg-3);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>');
+}
 
 export default function Chat() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: '0', role: 'assistant', content: 'Hi! I\'m the CETAC AI assistant. I can:\n\n• **Add/modify data** — "Add a task", "Create a contact", "Update CRM"\n• **Answer questions** — "How many tasks are done?", "Who\'s on the team?"\n• **Parse uploaded files** — Drop a CSV/Excel/PDF to import data\n• **Manage the app** — "Add a team member", "Change task status"\n\nWhat would you like to do?', timestamp: new Date().toISOString() }
-  ]);
+  const stored = useStore(s => s.chatMessages);
+  const addChatMessage = useStore(s => s.addChatMessage);
+  const clearChatMessages = useStore(s => s.clearChatMessages);
+  const currentUser = useStore(s => s.currentUser);
+  // Show the welcome message inline when nothing has been said yet, but never
+  // persist it — adding it to the synced list would re-broadcast it forever.
+  const messages = useMemo<Message[]>(() => stored.length ? stored : [WELCOME], [stored]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
@@ -110,9 +136,11 @@ export default function Chat() {
     return `I understood: "${text}"\n\nTry:\n• "Add a task to [description] week 2"\n• "Add contact [name] from [org] as investor"\n• "Add team member [name] as [role]"\n• "Assign daily task: [title] to [name]"\n• "How are we doing?"\n• "What tasks does Taslim have?"\n• Upload a CSV/Excel file to import data`;
   };
 
+  const pushAssistant = (content: string) => addChatMessage({ role: 'assistant', content });
+  const pushUser = (content: string) => addChatMessage({ role: 'user', content, authorName: currentUser?.name });
+
   const handleFile = async (file: File) => {
-    const userMsg: Message = { id: id(), role: 'user', content: `📎 Uploaded: ${file.name}`, timestamp: new Date().toISOString() };
-    setMessages(m => [...m, userMsg]);
+    pushUser(`📎 Uploaded: ${file.name}`);
     setLoading(true);
 
     try {
@@ -144,7 +172,7 @@ export default function Chat() {
         }
       } else {
         const text = await file.text();
-        setMessages(m => [...m, { id: id(), role: 'assistant', content: `📄 File contents (${text.length} chars):\n\n\`\`\`\n${text.slice(0, 1000)}\n\`\`\`\n\nTell me what to do with this data.`, timestamp: new Date().toISOString() }]);
+        pushAssistant(`📄 File contents (${text.length} chars):\n\n\`\`\`\n${text.slice(0, 1000)}\n\`\`\`\n\nTell me what to do with this data.`);
         setLoading(false);
         return;
       }
@@ -171,7 +199,7 @@ export default function Chat() {
           });
           imported++;
         });
-        setMessages(m => [...m, { id: id(), role: 'assistant', content: `✅ Imported **${imported} contacts** into CRM from ${file.name}.\n\nHeaders detected: ${headers.join(', ')}`, timestamp: new Date().toISOString() }]);
+        pushAssistant(`✅ Imported **${imported} contacts** into CRM from ${file.name}.\n\nHeaders detected: ${headers.join(', ')}`);
       } else if (headerLower.some(h => h.includes('role') || h.includes('responsibility') || h.includes('vertical'))) {
         // Team roles update
         data.forEach(row => {
@@ -190,25 +218,25 @@ export default function Chat() {
             imported++;
           }
         });
-        setMessages(m => [...m, { id: id(), role: 'assistant', content: `✅ Updated **${imported} team members** from ${file.name}.\n\nHeaders: ${headers.join(', ')}`, timestamp: new Date().toISOString() }]);
+        pushAssistant(`✅ Updated **${imported} team members** from ${file.name}.\n\nHeaders: ${headers.join(', ')}`);
       } else {
-        setMessages(m => [...m, { id: id(), role: 'assistant', content: `📊 Parsed **${data.length} rows** from ${file.name}.\n\nHeaders: ${headers.join(', ')}\n\nI could not auto-detect the data type. Tell me: should I import these as **contacts**, **tasks**, or **team updates**?`, timestamp: new Date().toISOString() }]);
+        pushAssistant(`📊 Parsed **${data.length} rows** from ${file.name}.\n\nHeaders: ${headers.join(', ')}\n\nI could not auto-detect the data type. Tell me: should I import these as **contacts**, **tasks**, or **team updates**?`);
       }
     } catch (err) {
-      setMessages(m => [...m, { id: id(), role: 'assistant', content: `❌ Error parsing file: ${err}`, timestamp: new Date().toISOString() }]);
+      pushAssistant(`❌ Error parsing file: ${err}`);
     }
     setLoading(false);
   };
 
   const send = () => {
     if (!input.trim() || loading) return;
-    const userMsg: Message = { id: id(), role: 'user', content: input.trim(), timestamp: new Date().toISOString() };
-    setMessages(m => [...m, userMsg]);
+    const text = input.trim();
+    pushUser(text);
     setInput('');
     setLoading(true);
     setTimeout(() => {
-      const response = parseAndExecute(userMsg.content);
-      setMessages(m => [...m, { id: id(), role: 'assistant', content: response, timestamp: new Date().toISOString() }]);
+      const response = parseAndExecute(text);
+      pushAssistant(response);
       setLoading(false);
     }, 300);
   };
@@ -220,14 +248,24 @@ export default function Chat() {
         <p style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 2 }}>Natural language interface — manage data, upload files, get insights</p>
       </div>
 
+      <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 40px 0' }}>
+        <button onClick={() => { if (confirm('Clear chat history for everyone?')) clearChatMessages(); }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text-3)', textDecoration: 'underline' }}>
+          Clear chat
+        </button>
+      </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '20px 40px' }}>
         {messages.map(m => (
           <div key={m.id} style={{ display: 'flex', gap: 10, marginBottom: 16, maxWidth: 700 }}>
             <div style={{ width: 28, height: 28, borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, background: m.role === 'assistant' ? 'var(--accent-light)' : 'var(--bg-3)' }}>
               {m.role === 'assistant' ? <Bot size={14} color="var(--accent)" /> : <User size={14} color="var(--text-2)" />}
             </div>
-            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text)', whiteSpace: 'pre-wrap' }}
-              dangerouslySetInnerHTML={{ __html: m.content.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`(.+?)`/g, '<code style="background:var(--bg-3);padding:1px 4px;border-radius:3px;font-size:12px">$1</code>') }} />
+            <div style={{ fontSize: 13, lineHeight: 1.6, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
+              {m.role === 'user' && m.authorName && (
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>{m.authorName}</div>
+              )}
+              <div dangerouslySetInnerHTML={{ __html: renderMarkdown(m.content) }} />
+            </div>
           </div>
         ))}
         {loading && (
