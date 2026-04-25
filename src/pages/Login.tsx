@@ -26,23 +26,33 @@ export default function Login() {
     return () => clearInterval(interval);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const [submitting, setSubmitting] = useState(false);
+
+  const attemptLogin = async (userEmail: string, userPassword: string) => {
     setError('');
-    const ok = login(email, password);
-    if (!ok) {
-      setError('Invalid email or password');
+    setSubmitting(true);
+    try {
+      const ok = await login(userEmail, userPassword);
+      if (!ok) {
+        // If your account was just created on another device and you're seeing
+        // this, ask the admin who added you to refresh their browser once —
+        // that pushes their local-only changes to the shared store.
+        setError('Invalid email or password. If you were just added, ask the admin to refresh their browser.');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    void attemptLogin(email, password);
+  };
+
   const quickLogin = (userEmail: string, userPassword: string) => {
-    const ok = login(userEmail, userPassword);
-    if (!ok) {
-      // If direct call fails, set fields and try via form
-      setEmail(userEmail);
-      setPassword(userPassword);
-      setError('Login failed — try clicking Sign In');
-    }
+    setEmail(userEmail);
+    setPassword(userPassword);
+    void attemptLogin(userEmail, userPassword);
   };
 
   if (!ready) {
@@ -77,8 +87,8 @@ export default function Login() {
               style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border)', borderRadius: 2, fontSize: 13, outline: 'none', fontFamily: 'var(--sans)', background: 'var(--bg)', color: 'var(--text)' }} />
           </div>
           {error && <div style={{ color: 'var(--red)', fontSize: 11, marginBottom: 12, fontWeight: 600 }}>{error}</div>}
-          <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px 16px' }}>
-            Sign In
+          <button type="submit" disabled={submitting} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px 16px', opacity: submitting ? 0.6 : 1 }}>
+            {submitting ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 

@@ -62,6 +62,28 @@ export function saveRemoteState(state: Record<string, any>) {
   }, 2000);
 }
 
+// Push the supplied state to the remote immediately, no debounce. Use this
+// after the very first rehydrate so any local-only data accumulated while
+// sync was broken (the original "members can't see each other's edits" bug)
+// gets uploaded without waiting for the user to make another change.
+export async function flushRemoteState(state: Record<string, any>): Promise<void> {
+  if (!remoteLoaded) return;
+  const json = JSON.stringify(state);
+  if (json === lastSavedJson) return;
+  if (saveTimeout) { clearTimeout(saveTimeout); saveTimeout = null; }
+  try {
+    lastSavedJson = json;
+    lastSavedAt = Date.now();
+    await fetch('/api/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: json,
+    });
+  } catch {
+    // localStorage is the fallback
+  }
+}
+
 // Merge a remote state snapshot into our local state.
 //
 // Strategy per collection (anything keyed by `id`): union by id. When the same

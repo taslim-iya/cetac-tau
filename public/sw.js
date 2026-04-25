@@ -1,4 +1,4 @@
-const CACHE = 'cetac-v5';
+const CACHE = 'cetac-v6';
 const PRECACHE = ['/', '/index.html'];
 
 self.addEventListener('install', e => {

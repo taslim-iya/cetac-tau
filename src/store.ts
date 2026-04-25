@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Contact, TeamMember, Task, CETACEvent, Partnership, ContentItem, CalendarEvent, AppSettings, CETACUser, MemberTask, Outreach, Vertical, KPI } from './types';
 import { id } from './lib/utils';
-import { loadRemoteState, saveRemoteState, mergeState, markRemoteLoaded, markUserEdit, startRemotePolling } from './lib/sync';
+import { loadRemoteState, saveRemoteState, mergeState, markRemoteLoaded, markUserEdit, startRemotePolling, flushRemoteState } from './lib/sync';
 import type { RolePlaybook, BSPartner } from './data/playbook-data';
 import { DEFAULT_PLAYBOOKS, DEFAULT_BS_PARTNERS } from './data/playbook-data';
 
@@ -37,7 +37,7 @@ interface S {
   _deletedIds: Record<string, string[]>;
   darkMode: boolean;
   toggleDarkMode: () => void;
-  login: (email: string, password: string) => boolean;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   add: <T extends { id: string }>(key: string, item: Omit<T, 'id' | 'createdAt'>) => void;
   update: (key: string, itemId: string, updates: Record<string, any>) => void;
@@ -295,11 +295,32 @@ export const useStore = create<S>()(
       darkMode: false,
       toggleDarkMode: () => set(s => ({ darkMode: !s.darkMode })),
 
-      login: (email: string, password: string) => {
+      login: async (email: string, password: string) => {
         const e = email.trim().toLowerCase();
         const p = password.trim();
-        const user = get().users.find(u => u.email.trim().toLowerCase() === e && u.password.trim() === p);
-        if (user) { set({ currentUser: user }); return true; }
+        const matches = (u: { email: string; password: string }) =>
+          u.email.trim().toLowerCase() === e && u.password.trim() === p;
+
+        const local = get().users.find(matches);
+        if (local) { set({ currentUser: local }); return true; }
+
+        // Miss locally — try one fresh remote pull before giving up. This
+        // catches the case where another browser created the account very
+        // recently and our cached users list is just stale.
+        try {
+          const remote = await loadRemoteState();
+          if (remote) {
+            applyingRemoteState = true;
+            try {
+              const merged = mergeState(get() as any, remote);
+              useStore.setState(merged);
+            } finally {
+              applyingRemoteState = false;
+            }
+            const refetched = get().users.find(matches);
+            if (refetched) { set({ currentUser: refetched }); return true; }
+          }
+        } catch {}
         console.log('[CETAC login] failed for:', e, '| users:', get().users.map(u => u.email));
         return false;
       },
@@ -506,6 +527,11 @@ export const useStore = create<S>()(
             }
             markRemoteLoaded();
             applyingRemoteState = false;
+            // Force one immediate save so any local-only data the user
+            // accumulated while sync was broken (members added before the
+            // sync fix landed) reaches Supabase even if they don't touch
+            // anything else this session.
+            flushRemoteState(buildSyncPayload(useStore.getState() as any));
             syncTeamRolesToPlaybooks();
             startRemotePolling((remoteState) => {
               applyingRemoteState = true;
@@ -571,14 +597,20 @@ async function syncTeamRolesToPlaybooks() {
   }
 }
 
-// Subscribe to changes and sync to remote (debounced).
-useStore.subscribe((state) => {
-  if (!applyingRemoteState) markUserEdit();
+// Build the slice of state we ship to Supabase. Kept in one place so the
+// subscribe-driven save and the post-rehydrate flush stay in lockstep.
+function buildSyncPayload(state: any) {
   const { contacts, team, tasks, events, partnerships, content, outreach, calendar, settings, users, memberTasks, roles, verticals, playbooks, bsPartners, chatMessages, accessOverrides, _deletedIds } = state;
-  saveRemoteState({
+  return {
     contacts, team, tasks, events, partnerships, content, outreach, calendar, settings,
     users, memberTasks, roles, verticals, playbooks, bsPartners,
     chatMessages, accessOverrides, _deletedIds,
-    resources: (state as any).resources,
-  });
+    resources: state.resources,
+  };
+}
+
+// Subscribe to changes and sync to remote (debounced).
+useStore.subscribe((state) => {
+  if (!applyingRemoteState) markUserEdit();
+  saveRemoteState(buildSyncPayload(state));
 });
