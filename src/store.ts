@@ -120,9 +120,11 @@ const PARTNERSHIPS: Partnership[] = [
   { id: id(), name: 'debtadvisory.ai', type: 'advisor', contactPerson: 'Darren Coyne / Tom Greene', contactEmail: '', status: 'prospect', notes: 'Week 5 event. Acquisition finance.', lastContactDate: '', nextAction: 'Confirm event details', createdAt: new Date().toISOString() },
 ];
 
-// Auto-generate credentials from name
+// Auto-generate credentials from name. Strip whitespace from the password so
+// users can actually type/paste it — most password fields swallow spaces.
+function slug(name: string) { return name.toLowerCase().replace(/[^a-z0-9]+/g, ''); }
 function makeEmail(name: string) { return `${name.toLowerCase().replace(/\s+/g, '.')}@etacambridge.co.uk`; }
-function makePassword(name: string) { return `cetac-${name.toLowerCase()}26`; }
+function makePassword(name: string) { return `cetac-${slug(name)}26`; }
 
 // Role-based permission presets
 const ROLE_PERMS: Record<string, Record<string, 'edit' | 'view'>> = {
@@ -271,15 +273,20 @@ export const useStore = create<S>()(
           if (key === 'team' && (item as any).name) {
             const name = (item as any).name;
             const role = (item as any).role || 'Member';
-            const email = makeEmail(name);
-            // Don't create duplicate
-            if (!s.users.find(u => u.email === email)) {
-              updated.users = [...s.users, {
-                id: id(), email, name, password: makePassword(name),
-                role: (role === 'President' ? 'super_admin' : 'team_member') as 'super_admin' | 'team_member',
-                permissions: permsForRole(role), teamMemberId: newId,
-              }];
+            // If two members share a first name, append a numeric suffix so each
+            // gets a unique login instead of the second one being silently dropped.
+            let email = makeEmail(name);
+            let suffix = 2;
+            while (s.users.find(u => u.email === email)) {
+              const base = name.toLowerCase().replace(/\s+/g, '.');
+              email = `${base}${suffix}@etacambridge.co.uk`;
+              suffix++;
             }
+            updated.users = [...s.users, {
+              id: id(), email, name, password: makePassword(name) + (suffix > 2 ? String(suffix - 1) : ''),
+              role: (role === 'President' ? 'super_admin' : 'team_member') as 'super_admin' | 'team_member',
+              permissions: permsForRole(role), teamMemberId: newId,
+            }];
             // Auto-generate playbook for this role if one doesn't exist (async, non-blocking)
             if (role && !role.toLowerCase().includes('member')) {
               const hasPlaybook = s.playbooks.some(p => p.role.toLowerCase() === role.toLowerCase());
@@ -385,17 +392,18 @@ export const useStore = create<S>()(
     {
       name: 'cetac-store',
       partialize: (s) => ({ contacts: s.contacts, team: s.team, tasks: s.tasks, events: s.events, partnerships: s.partnerships, content: s.content, outreach: s.outreach, calendar: s.calendar, settings: s.settings, darkMode: s.darkMode, users: s.users, currentUser: s.currentUser, memberTasks: s.memberTasks, roles: s.roles, verticals: s.verticals, playbooks: s.playbooks, bsPartners: s.bsPartners, resources: (s as any).resources }),
-      onRehydrate: () => {
-        // After localStorage rehydration, initialize missing fields and fetch remote
+      // Zustand v5 expects `onRehydrateStorage`, which returns a callback invoked
+      // after rehydration completes. The previous `onRehydrate` key was silently
+      // ignored, so remote state never loaded and `markRemoteLoaded` was never
+      // called — meaning saves were also blocked, leaving every browser stuck
+      // on its own localStorage.
+      onRehydrateStorage: () => () => {
         setTimeout(async () => {
           try {
             const local = useStore.getState();
-            // Backfill playbooks: only add defaults if store has zero playbooks (first ever load)
-            // After that, playbooks come from localStorage/Supabase sync and AI generation
             if (!local.playbooks || local.playbooks.length === 0) {
               useStore.setState({ playbooks: DEFAULT_PLAYBOOKS });
             } else {
-              // Just ensure assignedTo field exists on old playbooks
               const patched = local.playbooks.map((p: any) => p.assignedTo ? p : { ...p, assignedTo: [] });
               if (patched.some((p: any, i: number) => p !== local.playbooks[i])) {
                 useStore.setState({ playbooks: patched });
@@ -410,13 +418,10 @@ export const useStore = create<S>()(
               const merged = mergeState(updated as any, remote);
               useStore.setState(merged);
             }
-            // Now safe to start syncing changes back to remote
             markRemoteLoaded();
-
-            // Auto-sync: ensure every unique team role has a playbook
             syncTeamRolesToPlaybooks();
           } catch {
-            markRemoteLoaded(); // Even on error, allow saving
+            markRemoteLoaded();
           }
         }, 500);
       },

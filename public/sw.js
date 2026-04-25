@@ -15,6 +15,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  // Never cache the sync/AI API — caching them would make stale shared state
+  // shadow real remote updates, which is exactly the bug we're trying to avoid.
+  if (url.pathname.startsWith('/api/')) return;
   // Always go network-first for HTML pages (never serve stale app shell)
   if (e.request.mode === 'navigate' || e.request.destination === 'document') {
     e.respondWith(

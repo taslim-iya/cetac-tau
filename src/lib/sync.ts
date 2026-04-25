@@ -47,8 +47,10 @@ export function mergeState(local: Record<string, any>, remote: Record<string, an
   const collections = ['contacts', 'team', 'tasks', 'events', 'partnerships', 'content', 'outreach', 'calendar', 'users', 'memberTasks', 'roles', 'verticals', 'playbooks', 'bsPartners'];
   
   for (const key of collections) {
-    if (remote[key] && Array.isArray(remote[key]) && remote[key].length > 0) {
-      // Remote wins — it's the shared state from Supabase
+    // Remote wins whenever it carries the key, even when the array is empty —
+    // an empty array is a legitimate "everything was deleted" signal that must
+    // replicate, not a reason to fall back to local seed data.
+    if (Array.isArray(remote[key])) {
       merged[key] = remote[key];
     }
   }
